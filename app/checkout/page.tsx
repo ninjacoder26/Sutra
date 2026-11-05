@@ -232,15 +232,9 @@ export default function Checkout() {
   return (
     <div className="app-shell">
       <header id="hd" className="app-header">
-        <div className="w app-nav">
-          <Link href="/" className="logo app-brand" passHref>
-            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <rect width="34" height="34" rx="10" fill="#f0b429" />
-              <path d="M23 10c-2-2-9-2-9 2.5 0 5 11 2.5 11 8 0 4.5-8 4.5-12 1.5" stroke="#0e2624" strokeWidth="2.6" strokeLinecap="round" fill="none" />
-            </svg>
-            Sutra <span style={{ fontWeight: 400, opacity: 0.7 }}>Studio</span>
-          </Link>
-          <nav className="nl app-menu" id="nl" aria-label="Main">
+        <div className="w nv">
+          <b style={{ fontSize: "1.25rem" }}>Sutra Studio</b>
+          <nav className="app-menu" id="nl" aria-label="Main">
             <a href="/">Home</a>
             <a href="/checkout" className="active">Order a Website</a>
             <a href="/dashboard">Track Order</a>
@@ -455,7 +449,7 @@ export default function Checkout() {
               <div className="csr tot"><span>{tr("checkout.step5.total", L)}</span><span className="mo">{npr(orderDraft.total)}</span></div>
               <p className="sum-note" style={{ marginTop: "1rem", fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step5.note", L)}</p>
             </div>
-            <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: 12, border: "1px solid var(--line)", background: "rgba(14,38,36,.04)" }}><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span style={{ fontSize: ".9rem", color: "var(--mut)" }}>{tr("checkout.step5.payLaterDesc", L)}</span></div>
+            <div className="cnote"><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span>{tr("checkout.step5.payLaterDesc", L)}</span></div>
             <p className="note sum-note2" style={{ marginTop: ".75rem", fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step5.pcn", L)}</p>
             {errors[5] && <div className="cerr">{errors[5]}</div>}
             <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
@@ -489,7 +483,7 @@ export default function Checkout() {
               </div>
             ) : (
               <form id="form-6" noValidate onSubmit={submitOrder} className="cf" style={{ maxWidth: 420, margin: "0 auto" }}>
-                <div className="cfd"><label className="agree-label" style={{ display: "flex", alignItems: "center", gap: ".6rem", fontSize: ".95rem" }}><input type="checkbox" id="c-agree" name="agree" required /> <span>{tr("checkout.step6.agree", L)}</span></label></div>
+                <div className="cfd"><label className="agree-label"><input type="checkbox" id="c-agree" name="agree" required /> <span>{tr("checkout.step6.agree", L)}</span></label></div>
                 {errors[6] && <div className="cerr">{errors[6]}</div>}
                 <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "center" }}>
                   <button className="btn p" id="btn-submit" disabled={submitting} type="submit" style={{ width: "100%" }}>{submitting ? tr("checkout.step6.submitting", L) : tr("checkout.step6.submit", L)}</button>
