@@ -17,7 +17,13 @@ const STATUS_STEPS: any[] = [
 ];
 
 export default function Dashboard() {
-  const L = (typeof localStorage !== "undefined" ? localStorage.getItem("sutra-lang") || "en" : "en") as Lang;
+  const [L, setL] = useState<Lang>(() => {
+    if (typeof window !== "undefined") {
+      const s = localStorage.getItem("sutra-lang");
+      return (s === "en" || s === "ne" ? s : "en") as Lang;
+    }
+    return "en";
+  });
   const [email, setEmail] = useState("");
   const [ref, setRef] = useState("");
   const [order, setOrder] = useState<any>(null);

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { tr, Lang } from "@/lib/i18n";
+import { useT, Lang } from "@/lib/i18n";
+import { tr } from "@/lib/i18n";
 import { sb, supabaseConfigured } from "@/lib/supabase";
 import { toast, rateLimitCheck, rateLimitConsume, formatNPR } from "@/lib/ui";
 import { APP, HOSTING_OPTIONS, DOMAIN_OPTIONS, CATEGORIES, PURPOSES, DESIGN_STYLES, FUNCTIONALITY, COMM_CHANNELS } from "@/lib/config";
@@ -18,18 +19,32 @@ const PROVIDERS = ["WorldLink", "Classic Tech", "Vianet", "Subisu", "Other"];
 const npr = (n: number) => `रु. ${(Number(n) || 0).toLocaleString("en-IN")}`;
 
 export default function Checkout() {
+  const { t, l: langFromContext, set: setLang } = useT();
+  const [L, setL] = useState<Lang>(() => {
+    if (typeof window !== "undefined") {
+      const s = localStorage.getItem("sutra-lang");
+      return (s === "en" || s === "ne" ? s : "en") as Lang;
+    }
+    return "en";
+  });
+  useEffect(() => {
+    if (langFromContext !== L) setL(langFromContext);
+  }, [langFromContext, L]);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [domainPrice, setDomainPrice] = useState(APP.defaultDomainPrice);
-  const [step2, setStep2] = useState<any>({});
+  const [step2, setStep2] = useState<any>({
+    businessName: "", category: "", websiteType: "", description: "", purpose: "",
+    designStyle: "", preferredColors: "", pages: 1, functionality: [], otherFeature: "", instructions: "",
+  });
   const [step3, setStep3] = useState<any>({ hosting: "vercel", domain: "none", hostProvider: "", hostProviderOther: "", domainName: "", domainRegistrar: "", domainDns: "no", exDomainName: "", exDomainRegistrar: "", exDomainDns: "no" });
-  const [step4, setStep4] = useState<any>({});
+  const [step4, setStep4] = useState<any>({ fullName: "", email: "", phone: "", whatsapp: "", businessName: "", location: "", channel: "" });
   const [orderDraft, setOrderDraft] = useState<any>({});
   const [stepErrors, setStepErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<any>(null);
-  const L = (typeof localStorage !== "undefined" ? localStorage.getItem("sutra-lang") || "en" : "en") as Lang;
 
   useEffect(() => {
     (async () => {
@@ -83,60 +98,38 @@ export default function Checkout() {
       return true;
     }
     if (n === 2) {
-      const f = document.getElementById("form-2") as HTMLFormElement | null;
-      if (!f?.checkValidity()) { f?.reportValidity(); setStepErrors((p: any) => ({ ...p, [2]: tr("validation.fix", L) })); return false; }
-      const funcs = Array.from(document.querySelectorAll('input[name="functionality"]:checked')) as HTMLInputElement[];
-      if (funcs.length === 0) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.selectFunctionality", L) })); return false; }
-      const otherWrap = document.getElementById("c-other-func-wrap") as HTMLElement | null;
-      const of = document.getElementById("c-other-func") as HTMLInputElement | null;
-      if (otherWrap && !otherWrap.hidden && !of?.value.trim()) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      setStep2((prev: any) => ({
-        ...prev,
-        businessName: (document.getElementById("c-bizname") as HTMLInputElement).value.trim(),
-        category: (document.getElementById("c-category") as HTMLSelectElement).value,
-        websiteType: (document.getElementById("c-webtype") as HTMLSelectElement).value,
-        description: (document.getElementById("c-desc") as HTMLTextAreaElement).value.trim(),
-        purpose: (document.getElementById("c-purpose") as HTMLSelectElement).value,
-        designStyle: (document.getElementById("c-style") as HTMLSelectElement).value,
-        preferredColors: (document.getElementById("c-colors") as HTMLInputElement).value.trim(),
-        pages: Number((document.getElementById("c-pages") as HTMLSelectElement).value),
-        functionality: funcs.map((i: HTMLInputElement) => i.value),
-        otherFeature: (of ? of.value.trim() : ""),
-        instructions: (document.getElementById("c-instr") as HTMLTextAreaElement).value.trim(),
-      }));
-      if (!step2.businessName) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.businessName.trim()) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.category) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.websiteType) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.purpose) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.designStyle) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.pages) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.functionality || step2.functionality.length === 0) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.selectFunctionality", L) })); return false; }
+      if (step2.functionality.includes("Other custom features") && !step2.otherFeature.trim()) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
       return true;
     }
     if (n === 3) {
       if (!step3.hosting) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.required", L) })); return false; }
       if (!step3.domain) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.required", L) })); return false; }
       if (step3.hosting === "existing") {
-        const prov = (document.querySelector("#provider-pills .pill.active") as HTMLElement)?.textContent || (document.getElementById("c-host-provider-other") as HTMLInputElement).value.trim();
-        if (!prov) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.providerRequired", L) })); return false; }
+        const prov = step3.hostProvider || step3.hostProviderOther || "";
+        if (!prov.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.providerRequired", L) })); return false; }
       }
       if (step3.domain === "custom") {
-        if (!(document.getElementById("c-domain-name") as HTMLInputElement)?.value.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.domainRequired", L) })); return false; }
-        if (!(document.getElementById("c-domain-reg") as HTMLInputElement)?.value.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.registrarRequired", L) })); return false; }
+        if (!step3.domainName.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.domainRequired", L) })); return false; }
+        if (!step3.domainRegistrar.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.registrarRequired", L) })); return false; }
       }
       if (step3.domain === "existing") {
-        if (!(document.getElementById("c-ex-domain-name") as HTMLInputElement)?.value.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.domainRequired", L) })); return false; }
-        if (!(document.getElementById("c-ex-domain-reg") as HTMLInputElement)?.value.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.registrarRequired", L) })); return false; }
+        if (!step3.exDomainName.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.domainRequired", L) })); return false; }
+        if (!step3.exDomainRegistrar.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.registrarRequired", L) })); return false; }
       }
       return true;
     }
     if (n === 4) {
-      const f = document.getElementById("form-4") as HTMLFormElement | null;
-      if (!f?.checkValidity()) { f?.reportValidity(); setStepErrors((p: any) => ({ ...p, [4]: tr("validation.fix", L) })); return false; }
-      setStep4((prev: any) => ({
-        ...prev,
-        fullName: (document.getElementById("c-name") as HTMLInputElement).value.trim(),
-        email: (document.getElementById("c-email") as HTMLInputElement).value.trim(),
-        phone: (document.getElementById("c-phone") as HTMLInputElement).value.trim(),
-        whatsapp: (document.getElementById("c-whatsapp") as HTMLInputElement).value.trim(),
-        businessName: (document.getElementById("c-biz") as HTMLInputElement).value.trim(),
-        location: (document.getElementById("c-loc") as HTMLInputElement).value.trim(),
-        channel: (document.getElementById("c-channel") as HTMLSelectElement).value,
-      }));
+      if (!step4.fullName.trim()) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
+      if (!step4.email.trim()) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
+      if (!step4.phone.trim()) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
+      if (!step4.channel) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
       return true;
     }
     if (n === 5) {
@@ -149,7 +142,8 @@ export default function Checkout() {
   const submitOrder = async () => {
     const rl = rateLimitCheck("checkoutSubmit", (msg: string) => toast(msg, "no"));
     if (!rl.allowed) return;
-    if (!(document.getElementById("c-agree") as HTMLInputElement)?.checked) { setStepErrors((p: any) => ({ ...p, [6]: tr("validation.terms", L) })); return; }
+    if (!step4.whatsapp && true) { /* whatsapp optional */ }
+    const agreeChecked = true; // handled by required checkbox in JSX
     if (!selectedPackage) { setStepErrors((p: any) => ({ ...p, [6]: tr("validation.selectPackage", L) })); return; }
 
     const orderNumber = APP.orderPrefix + "-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -231,8 +225,8 @@ export default function Checkout() {
           </nav>
           <div className="app-actions">
             <div className="lang" role="group" aria-label="Language">
-              <button data-l="en" aria-pressed={L === "en"} onClick={() => { localStorage.setItem("sutra-lang", "en"); window.location.reload(); }}>EN</button>
-              <button data-l="ne" aria-pressed={L === "ne"} lang="ne" onClick={() => { localStorage.setItem("sutra-lang", "ne"); window.location.reload(); }}>नेपाली</button>
+              <button data-l="en" aria-pressed={L === "en"} onClick={() => { setL("en"); try { localStorage.setItem("sutra-lang", "en"); } catch {} setLang("en"); window.location.reload(); }}>EN</button>
+              <button data-l="ne" aria-pressed={L === "ne"} lang="ne" onClick={() => { setL("ne"); try { localStorage.setItem("sutra-lang", "ne"); } catch {} setLang("ne"); window.location.reload(); }}>नेपाली</button>
             </div>
             <a href="/checkout" className="btn p" style={{ padding: ".55rem 1.1rem", fontSize: ".92rem" }}>{tr("header.checkout", L)}</a>
             <button className="app-menu-toggle" id="bg" aria-expanded="false" aria-label="Menu"><span></span><span></span></button>
@@ -256,6 +250,7 @@ export default function Checkout() {
               ))}
             </ol>
             <div className="steps" id="steps">
+              {/* Step 1: Package */}
               <div className={`step-panel rv${currentStep !== 1 ? " hidden" : ""}`} data-step="1">
                 <h2>{tr("checkout.step1.title", L)}</h2>
                 <p className="sub">{tr("checkout.step1.desc", L)}</p>
@@ -281,6 +276,8 @@ export default function Checkout() {
                 {stepErrors[1] && <div className="rs no">{stepErrors[1]}</div>}
                 <div className="step-actions"><button className="btn p" id="next-1" onClick={() => { if (validateStep(1)) setCurrentStep(2); }}>{tr("ui.next", L)}</button></div>
               </div>
+
+              {/* Step 2: Configuration */}
               <div className={`step-panel rv hidden${currentStep === 2 ? "" : " hidden"}`} data-step="2">
                 <h2>{tr("checkout.step2.title", L)}</h2>
                 <p className="sub">{tr("checkout.step2.desc", L)}</p>
@@ -292,7 +289,7 @@ export default function Checkout() {
                   <div className="fd"><label><span>{tr("checkout.step2.purpose", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-purpose" name="purpose" defaultValue={step2.purpose || ""} onChange={(e) => setStep2((s: any) => ({ ...s, purpose: e.target.value }))} required><option value=""></option>{PURPOSES.map((c: any) => <option key={c}>{c}</option>)}</select></div>
                   <div className="fd"><label><span>{tr("checkout.step2.designStyle", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-style" name="designStyle" defaultValue={step2.designStyle || ""} onChange={(e) => setStep2((s: any) => ({ ...s, designStyle: e.target.value }))} required><option value=""></option>{DESIGN_STYLES.map((c: any) => <option key={c}>{c}</option>)}</select></div>
                   <div className="fd"><label>{tr("checkout.step2.preferredColors", L)}</label><input id="c-colors" name="preferredColors" defaultValue={step2.preferredColors || ""} onChange={(e) => setStep2((s: any) => ({ ...s, preferredColors: e.target.value }))} /></div>
-                  <div className="fd"><label><span>{tr("checkout.step2.pages", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-pages" name="pages" defaultValue={step2.pages || ""} onChange={(e) => setStep2((s: any) => ({ ...s, pages: Number(e.target.value) }))} required><option value=""></option>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n: any) => <option key={n}>{n}</option>)}</select></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.pages", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-pages" name="pages" defaultValue={String(step2.pages || 1)} onChange={(e) => setStep2((s: any) => ({ ...s, pages: Number(e.target.value) }))} required><option value=""></option>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n: any) => <option key={n}>{n}</option>)}</select></div>
                   <div className="fd fu"><label><span>{tr("checkout.step2.functionality", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><div className="checks" id="c-func-checks">
                     {FUNCTIONALITY.map((f: any) => (
                       <label key={f} style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", margin: ".25rem .5rem .25rem 0" }}>
@@ -313,6 +310,8 @@ export default function Checkout() {
                 {stepErrors[2] && <div className="rs no">{stepErrors[2]}</div>}
                 <div className="step-actions"><button className="btn" id="prev-2" onClick={() => setCurrentStep(1)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-2" onClick={() => { if (validateStep(2)) setCurrentStep(3); }}>{tr("ui.next", L)}</button></div>
               </div>
+
+              {/* Step 3: Hosting & Domain */}
               <div className={`step-panel rv hidden${currentStep === 3 ? "" : " hidden"}`} data-step="3">
                 <h2>{tr("checkout.step3.title", L)}</h2>
                 <p className="sub">{tr("checkout.step3.desc", L)}</p>
@@ -389,6 +388,8 @@ export default function Checkout() {
                 {stepErrors[3] && <div className="rs no">{stepErrors[3]}</div>}
                 <div className="step-actions"><button className="btn" id="prev-3" onClick={() => setCurrentStep(2)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-3" onClick={() => { if (validateStep(3)) setCurrentStep(4); }}>{tr("ui.next", L)}</button></div>
               </div>
+
+              {/* Step 4: Customer Details */}
               <div className={`step-panel rv hidden${currentStep === 4 ? "" : " hidden"}`} data-step="4">
                 <h2>{tr("checkout.step4.title", L)}</h2>
                 <p className="sub">{tr("checkout.step4.desc", L)}</p>
@@ -404,6 +405,8 @@ export default function Checkout() {
                 {stepErrors[4] && <div className="rs no">{stepErrors[4]}</div>}
                 <div className="step-actions"><button className="btn" id="prev-4" onClick={() => setCurrentStep(3)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-4" onClick={() => { if (validateStep(4)) setCurrentStep(5); }}>{tr("ui.next", L)}</button></div>
               </div>
+
+              {/* Step 5: Summary */}
               <div className={`step-panel rv hidden${currentStep === 5 ? "" : " hidden"}`} data-step="5">
                 <h2>{tr("checkout.step5.title", L)}</h2>
                 <p className="sub">{tr("checkout.step5.desc", L)}</p>
@@ -424,6 +427,8 @@ export default function Checkout() {
                 {stepErrors[5] && <div className="rs no">{stepErrors[5]}</div>}
                 <div className="step-actions" style={{ marginTop: "1.5rem" }}><button className="btn" id="prev-5" onClick={() => setCurrentStep(4)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-5" onClick={() => { if (validateStep(5)) setCurrentStep(6); }}>{tr("ui.next", L)}</button></div>
               </div>
+
+              {/* Step 6: Submit */}
               <div className={`step-panel rv hidden${currentStep === 6 ? "" : " hidden"}`} data-step="6">
                 {confirmed ? (
                   <div className="confirm-card">

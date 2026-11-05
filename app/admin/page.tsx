@@ -19,7 +19,13 @@ const TABS: any[] = [
 ];
 
 export default function Admin() {
-  const L = (typeof localStorage !== "undefined" ? localStorage.getItem("sutra-lang") || "en" : "en") as Lang;
+  const [L, setL] = useState<Lang>(() => {
+    if (typeof window !== "undefined") {
+      const s = localStorage.getItem("sutra-lang");
+      return (s === "en" || s === "ne" ? s : "en") as Lang;
+    }
+    return "en";
+  });
   const [unlocked, setUnlocked] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [tab, setTab] = useState("overview");
