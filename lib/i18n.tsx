@@ -42,3 +42,233 @@ export function LangProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={{ l, t: D[l] as (typeof D)["en"], set }}>{children}</Ctx.Provider>;
 }
 export const useT = () => useContext(Ctx);
+
+// Flat translation bundle used by the multi-step checkout (dot-notation keys).
+const FLAT: Record<Lang, Record<string, any>> = {
+  en: {
+    ui: {
+      next: "Next",
+      previous: "Previous",
+      free: "Free",
+      none: "None",
+      included: "Included",
+      npr: "NPR",
+    },
+    header: { checkout: "Checkout" },
+    validation: {
+      selectPackage: "Please select a package.",
+      fix: "Please fix the highlighted fields.",
+      selectFunctionality: "Please select at least one functionality.",
+      required: "This field is required.",
+      providerRequired: "Please select a hosting provider.",
+      domainRequired: "Please enter a domain name.",
+      registrarRequired: "Please enter a domain registrar.",
+      terms: "Please agree to the terms and conditions.",
+    },
+    checkout: {
+      title: "Checkout",
+      subtitle: "Review your order and submit.",
+      steps: { "1": "Package", "2": "Configuration", "3": "Hosting & Domain", "4": "Customer Details", "5": "Summary", "6": "Submit" },
+      step1: {
+        title: "Choose a package",
+        desc: "Select the website package that fits your needs.",
+        recommended: "Recommended",
+        choose: "Choose package",
+      },
+      step2: {
+        title: "Website details",
+        desc: "Tell us about your website.",
+        businessName: "Business name",
+        category: "Category",
+        websiteType: "Website type",
+        description: "Description",
+        purpose: "Purpose",
+        designStyle: "Design style",
+        preferredColors: "Preferred colors",
+        pages: "Number of pages",
+        functionality: "Functionality",
+        functionalityNote: "Select all that apply.",
+        otherFeature: "Other features",
+        instructions: "Additional instructions",
+      },
+      step3: {
+        title: "Hosting & domain",
+        desc: "Choose hosting and domain options.",
+        hosting: "Hosting",
+        existingHosting: { provider: "Hosting provider" },
+        domain: "Domain",
+        existingDomain: {
+          title: "Existing domain",
+          domainName: "Domain name",
+          registrar: "Registrar",
+          dns: "DNS management",
+          dnsYes: "Yes",
+          dnsNo: "No",
+        },
+        customDomain: { desc: "We'll help you register your custom domain." },
+        vercel: { title: "Vercel Hosting (free)" },
+      },
+      step4: {
+        title: "Customer details",
+        desc: "Your contact information.",
+        fullName: "Full name",
+        email: "Email",
+        phone: "Phone",
+        whatsapp: "WhatsApp",
+        businessName: "Business name",
+        location: "Location",
+        channel: "Preferred contact channel",
+      },
+      step5: {
+        title: "Order summary",
+        desc: "Review your order before submitting.",
+        package: "Package",
+        hostingLabel: "Hosting",
+        domainLabel: "Domain",
+        addOns: "Add-ons",
+        total: "Total",
+        note: "Payment is due before work begins.",
+        payLater: "Pay later",
+        payLaterDesc: "You'll receive payment details after order submission.",
+        pcn: "Your order reference number will be sent via WhatsApp.",
+      },
+      step6: {
+        successTitle: "Order received",
+        successDesc: "Thank you! Your order has been placed.",
+        orderNumber: "Order number",
+        orderReference: "Reference",
+        nextSteps: "Next steps",
+        next1: "We'll review your order and confirm within 24 hours.",
+        next2: "You'll receive payment details via WhatsApp.",
+        next3: "Development begins once payment is confirmed.",
+        next4: "Track progress from your dashboard.",
+        viewDashboard: "View dashboard",
+        close: "Close",
+        agree: "I agree to the terms and conditions.",
+        submitting: "Submitting...",
+        submit: "Place order",
+      },
+    },
+  },
+  ne: {
+    ui: {
+      next: "अग्ला",
+      previous: "अघिल्लो",
+      free: "निःशुल्क",
+      none: "कुनै नइ",
+      included: "समावेशित",
+      npr: "रु.",
+    },
+    header: { checkout: "चेकआउट" },
+    validation: {
+      selectPackage: "कृपया एउटा प्याकेज छान्नुहोस्।",
+      fix: "कृपया हाइलाइट गरिएका क्षेत्रहरु सच्याउनुहोस्।",
+      selectFunctionality: "कृपया कम्तिमा एउटा सुविधा छान्नुहोस्।",
+      required: "यो क्षेत्र अनिवार्य छ।",
+      providerRequired: "कृपया होस्टिङ प्रदायक छान्नुहोस्।",
+      domainRequired: "कृपया डोमेन नाम प्रविष्ट गर्नुहोस्।",
+      registrarRequired: "कृपया डोमेन रजिस्ट्रार प्रविष्ट गर्नुहोस्।",
+      terms: "कृपया सर्त र शर्तहरुमा सहमत हुनुहोस्।",
+    },
+    checkout: {
+      title: "चेकआउट",
+      subtitle: "अर्डर समीक्षा गर्नुहोस् र बुझाउनुहोस्।",
+      steps: { "1": "प्याकेज", "2": "कन्फिगरेशन", "3": "होस्टिङ र डोमेन", "4": "ग्राहक विवरण", "5": "सारांश", "6": "बुझाउनुहोस्" },
+      step1: {
+        title: "प्याकेज छान्नुहोस्",
+        desc: "तपाईंको आवश्यकता अनुसार वेबसाइट प्याकेज छान्नुहोस्।",
+        recommended: "सिफारिस गरिएको",
+        choose: "प्याकेज छान्नुहोस्",
+      },
+      step2: {
+        title: "वेबसाइट विवरण",
+        desc: "हामीलाई आफ्नो वेबसाइटको बारेमा बताउनुहोस्।",
+        businessName: "व्यवसायको नाम",
+        category: "श्रेणी",
+        websiteType: "वेबसाइटको प्रकार",
+        description: "विवरण",
+        purpose: "उद्देश्य",
+        designStyle: "डिजाइन शैली",
+        preferredColors: "रुचाइएको रंग",
+        pages: "पेजको संख्या",
+        functionality: "कार्यक्षमता",
+        functionalityNote: "सबै छान्नुहोस् जसले लागू हुन्छ।",
+        otherFeature: "अन्य सुविधाहरु",
+        instructions: "थप निर्देशनहरु",
+      },
+      step3: {
+        title: "होस्टिङ र डोमेन",
+        desc: "होस्टिङ र डोमेन विकल्प छान्नुहोस्।",
+        hosting: "होस्टिङ",
+        existingHosting: { provider: "होस्टिङ प्रदायक" },
+        domain: "डोमेन",
+        existingDomain: {
+          title: "पहिलेदेखि रहेको डोमेन",
+          domainName: "डोमेन नाम",
+          registrar: "रजिस्ट्रार",
+          dns: "DNS व्यवस्थापन",
+          dnsYes: "हुन्छ",
+          dnsNo: "हुदैन",
+        },
+        customDomain: { desc: "हामी तपाईंलाई कस्टम डोमेन दर्ता गर्न मद्दत गर्नेछौं।" },
+        vercel: { title: "Vercel होस्टिङ (निःशुल्क)" },
+      },
+      step4: {
+        title: "ग्राहक विवरण",
+        desc: "तपाईंको सम्पर्क जानकारी।",
+        fullName: "पूरा नाम",
+        email: "इमेल",
+        phone: "फोन",
+        whatsapp: "WhatsApp",
+        businessName: "व्यवसायको नाम",
+        location: "ठेगाना",
+        channel: "रुचाइएको सम्पर्क माध्यम",
+      },
+      step5: {
+        title: "अर्डर सारांश",
+        desc: "बुझाउनु अघि आफ्नो अर्डर समीक्षा गर्नुहोस्।",
+        package: "प्याकेज",
+        hostingLabel: "होस्टिङ",
+        domainLabel: "डोमेन",
+        addOns: "थप सुविधाहरु",
+        total: "जम्मा",
+        note: "काम सुरु भन्दा अघि भुक्तानी आवश्यक छ।",
+        payLater: "पछि भुक्तानी",
+        payLaterDesc: "अर्डर बुझाइपछि तपाईंलाई भुक्तानी विवरण पठाइनेछ।",
+        pcn: "तपाईंको अर्डर सन्दर्भ नम्बर WhatsApp मार्फत पठाइनेछ।",
+      },
+      step6: {
+        successTitle: "अर्डर प्राप्त भयो",
+        successDesc: "धन्यवाद! तपाईंको अर्डर बुझाइएको छ।",
+        orderNumber: "अर्डर नम्बर",
+        orderReference: "सन्दर्भ",
+        nextSteps: "अगली प्रक्रिया",
+        next1: "हामी २४ घण्टाभित्र तपाईंको अर्डर समीक्षा गरी पुष्टि गर्नेछौं।",
+        next2: "तपाईंलाई WhatsApp मार्फत भुक्तानी विवरण पठाइनेछ।",
+        next3: "भुक्तानी पुष्टि भएपछि विकास सुरु हुनेछ।",
+        next4: "ड्याशबोर्डबाट प्रगति ट्र्याक गर्नुहोस्।",
+        viewDashboard: "ड्याशबोर्ड हेर्नुहोस्",
+        close: "बन्द गर्नुहोस्",
+        agree: "म सर्त र शर्तहरुमा सहमत छु।",
+        submitting: "बुझाइरहेको छ...",
+        submit: "अर्डर गर्नुहोस्",
+      },
+    },
+  },
+};
+
+export function tr(key: string, lang: Lang = "en"): string {
+  const parts = String(key).split(".");
+  const resolve = (src: Record<string, any> | null): any => {
+    let obj: any = src;
+    for (const p of parts) {
+      if (obj == null || typeof obj !== "object") return undefined;
+      obj = obj[p];
+    }
+    return obj;
+  };
+  let val = resolve(FLAT[lang]);
+  if (val == null) val = resolve(FLAT.en);
+  if (val == null) return key;
+  return typeof val === "string" ? val : String(val);
+}

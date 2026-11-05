@@ -12,7 +12,7 @@ export default function Home() {
       <section className="hero"><div className="w"><h1>{t.h1}</h1><p>{t.sub}</p>
         <p style={{ marginTop: "2rem" }}><a className="btn p" href="#packages">{t.cta}</a></p></div></section>
       <section id="packages"><div className="w"><h2>{t.pTitle}</h2>
-        <div className="pg">{PACKAGES.map((p) => { const [n, who, items] = t.pk[p.id]; const r = "recommended" in p;
+        <div className="pg">{PACKAGES.map((p) => { const [n, who, items] = t.pk[p.id as keyof typeof t.pk]; const r = "recommended" in p;
           return (<article key={p.id} className={`pk${r ? " r" : ""}`}>{r && <span className="tag">{t.rec}</span>}
             <h3>{n}</h3><p>{who}</p><div className="pc">{npr(p.price)}</div>
             <p style={{ margin: 0 }}>{p.days[0]}–{p.days[1]} {t.days}</p>
