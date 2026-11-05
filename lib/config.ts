@@ -20,6 +20,7 @@ export const APP = {
   defaultDomainPrice: 1599,
   defaultVercelPrice: 0,
   orderPrefix: "SUTRA",
+  adminCode: "sutra-admin-2024",
 };
 
 const HOSTING_OPTIONS = [
