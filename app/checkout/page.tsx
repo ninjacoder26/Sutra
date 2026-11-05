@@ -228,7 +228,6 @@ export default function Checkout() {
   };
 
   const stepLabels = STEP_LABELS[L as keyof typeof STEP_LABELS] || STEP_LABELS.en;
-  const pct = ((step - 1) / 5) * 100;
 
   return (
     <div className="app-shell">
@@ -258,39 +257,38 @@ export default function Checkout() {
         </div>
       </header>
       <main>
-        <div className="w coh">
+        <div className="w ck">
           <h1>{tr("checkout.title", L)}</h1>
           <p>{tr("checkout.subtitle", L)}</p>
         </div>
 
-        <div className="cprog">
-          <div className="cprog-line"><div className="cprog-fill" style={{ width: `${pct}%` }} /></div>
+        <div className="cp">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className={`cprog-dot${step >= n ? " done" : ""}${step === n ? " current" : ""}`}>{n}</div>
+            <div key={n} className={`cpd${step >= n ? " done" : ""}${step === n ? " cur" : ""}`}>{n}</div>
           ))}
         </div>
-        <div className="cprog" style={{ marginTop: "-2rem", marginBottom: 0 }}>
+        <div className="cp" style={{ marginTop: "-2.2rem", marginBottom: 0 }}>
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className={`cprog-label${step >= n ? " done" : ""}`}>{stepLabels[n - 1]}</div>
+            <div key={n} className={`cpl${step >= n ? " done" : ""}`}>{stepLabels[n - 1]}</div>
           ))}
         </div>
 
-        <div className="csteps">
+        <div className="w" style={{ maxWidth: 900, margin: "0 auto" }}>
           {/* Step 1: Package */}
-          <div className={`cstep${step === 1 ? " active" : ""}`}>
+          <div className={`cs${step === 1 ? " active" : ""}`}>
             <h2 style={{ marginBottom: ".4rem" }}>{tr("checkout.step1.title", L)}</h2>
             <p className="sub" style={{ marginBottom: "1.5rem", color: "var(--mut)" }}>{tr("checkout.step1.desc", L)}</p>
-            <div className="cpkg" id="pkg-grid">
+            <div className="cpg" id="pkg-grid">
               {packages.map((p: any, i: number) => {
                 const featured = p.featured === true;
                 const isSelected = selectedPackage === p;
                 return (
-                  <article key={i} className={`pkg${featured ? " featured" : ""}${isSelected ? " selected" : ""}`} onClick={() => { setSelectedPackage(p); setErrors((e) => ({ ...e, 1: "" })); }}>
-                    {featured ? <span className="tag">{tr("checkout.step1.recommended", L)}</span> : null}
+                  <article key={i} className={`cpc${featured ? " featured" : ""}${isSelected ? " sel" : ""}`} onClick={() => { setSelectedPackage(p); setErrors((e) => ({ ...e, 1: "" })); }}>
+                    {featured ? <span className="tg">{tr("checkout.step1.recommended", L)}</span> : null}
                     <h3 style={{ marginTop: 0 }}>{pkgLabel(p)}</h3>
                     <p>{pkgDesc(p)}</p>
-                    <div className="pc">रु. {p.price}</div>
-                    <span className="dl">{p.days}</span>
+                    <div className="cd">रु. {p.price}</div>
+                    <span className="dd">{p.days}</span>
                     <ul>{(p.features || []).map((f: string) => <li key={f}>{f}</li>)}</ul>
                     <button className={`btn ${featured ? "p" : ""}`} style={{ width: "100%", marginTop: "auto" }} onClick={() => { setSelectedPackage(p); setErrors((e) => ({ ...e, 1: "" })); }}>{tr("checkout.step1.choose", L)}</button>
                   </article>
@@ -298,28 +296,28 @@ export default function Checkout() {
               })}
             </div>
             {errors[1] && <div className="cerr">{errors[1]}</div>}
-            <div className="cact" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "flex-end" }}>
+            <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "flex-end" }}>
               <button className="btn p" id="next-1" onClick={() => { if (validate(1)) setStep(2); }}>{tr("ui.next", L)}</button>
             </div>
           </div>
 
           {/* Step 2: Configuration */}
-          <div className={`cstep${step === 2 ? " active" : ""}`}>
+          <div className={`cs${step === 2 ? " active" : ""}`}>
             <h2 style={{ marginBottom: ".4rem" }}>{tr("checkout.step2.title", L)}</h2>
             <p className="sub" style={{ marginBottom: "1.5rem", color: "var(--mut)" }}>{tr("checkout.step2.desc", L)}</p>
-            <form id="form-2" noValidate className="cform">
+            <form id="form-2" noValidate className="cf">
               <div className="cfd"><label><span>{tr("checkout.step2.businessName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-bizname" defaultValue={step2.businessName} onChange={(e) => setStep2((s) => ({ ...s, businessName: e.target.value }))} /></div>
               {errors[2] && <div className="cerr">{errors[2]}</div>}
               <div className="cfd"><label><span>{tr("checkout.step2.category", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-category" defaultValue={step2.category} onChange={(e) => setStep2((s) => ({ ...s, category: e.target.value }))}><option value=""></option>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></div>
               <div className="cfd"><label><span>{tr("checkout.step2.websiteType", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-webtype" defaultValue={step2.websiteType} onChange={(e) => setStep2((s) => ({ ...s, websiteType: e.target.value }))}><option value=""></option>{PURPOSES.map((c) => <option key={c}>{c}</option>)}</select></div>
-              <div className="cfd fu"><label>{tr("checkout.step2.description", L)}</label><textarea id="c-desc" defaultValue={step2.description} onChange={(e) => setStep2((s) => ({ ...s, description: e.target.value }))} rows={4} /></div>
+              <div className="cfd"><label>{tr("checkout.step2.description", L)}</label><textarea id="c-desc" defaultValue={step2.description} onChange={(e) => setStep2((s) => ({ ...s, description: e.target.value }))} rows={4} /></div>
               <div className="cfd"><label><span>{tr("checkout.step2.purpose", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-purpose" defaultValue={step2.purpose} onChange={(e) => setStep2((s) => ({ ...s, purpose: e.target.value }))}><option value=""></option>{PURPOSES.map((c) => <option key={c}>{c}</option>)}</select></div>
               <div className="cfd"><label><span>{tr("checkout.step2.designStyle", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-style" defaultValue={step2.designStyle} onChange={(e) => setStep2((s) => ({ ...s, designStyle: e.target.value }))}><option value=""></option>{DESIGN_STYLES.map((c) => <option key={c}>{c}</option>)}</select></div>
               <div className="cfd"><label>{tr("checkout.step2.preferredColors", L)}</label><input id="c-colors" defaultValue={step2.preferredColors} onChange={(e) => setStep2((s) => ({ ...s, preferredColors: e.target.value }))} /></div>
               <div className="cfd"><label><span>{tr("checkout.step2.pages", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-pages" defaultValue={String(step2.pages)} onChange={(e) => setStep2((s) => ({ ...s, pages: Number(e.target.value) }))}><option value=""></option>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => <option key={n}>{n}</option>)}</select></div>
-              <div className="cfd"><label><span>{tr("checkout.step2.functionality", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><div className="cck" id="c-func-checks">
+              <div className="cfd"><label><span>{tr("checkout.step2.functionality", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><div className="cc" id="c-func-checks">
                 {FUNCTIONALITY.map((f) => (
-                  <label key={f} className={step2.functionality.includes(f) ? "active" : ""} onClick={(e) => {
+                  <label key={f} className={step2.functionality.includes(f) ? "a" : ""} onClick={(e) => {
                     e.preventDefault();
                     if (step2.functionality.includes(f)) setStep2((s) => ({ ...s, functionality: s.functionality.filter((x) => x !== f) }));
                     else setStep2((s) => ({ ...s, functionality: [...s.functionality, f] }));
@@ -329,29 +327,29 @@ export default function Checkout() {
                   </label>
                 ))}
               </div><p className="em" id="c-func-note" style={{ fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step2.functionalityNote", L)}</p></div>
-              <div className="cfd fu" id="c-other-func-wrap" hidden={!step2.functionality.includes("Other custom features")}>
+              <div className="cfd" id="c-other-func-wrap" hidden={!step2.functionality.includes("Other custom features")}>
                 <label>{tr("checkout.step2.otherFeature", L)}</label><input id="c-other-func" defaultValue={step2.otherFeature} onChange={(e) => setStep2((s) => ({ ...s, otherFeature: e.target.value }))} />
               </div>
-              <div className="cfd fu"><label>{tr("checkout.step2.instructions", L)}</label><textarea id="c-instr" defaultValue={step2.instructions} onChange={(e) => setStep2((s) => ({ ...s, instructions: e.target.value }))} rows={3} /></div>
+              <div className="cfd"><label>{tr("checkout.step2.instructions", L)}</label><textarea id="c-instr" defaultValue={step2.instructions} onChange={(e) => setStep2((s) => ({ ...s, instructions: e.target.value }))} rows={3} /></div>
             </form>
-            <div className="cact" style={{ marginTop: "1rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
+            <div className="ca" style={{ marginTop: "1rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
               <button className="btn" id="prev-2" onClick={() => setStep(1)}>{tr("ui.previous", L)}</button>
               <button className="btn p" id="next-2" onClick={() => { if (validate(2)) setStep(3); }}>{tr("ui.next", L)}</button>
             </div>
           </div>
 
           {/* Step 3: Hosting & Domain */}
-          <div className={`cstep${step === 3 ? " active" : ""}`}>
+          <div className={`cs${step === 3 ? " active" : ""}`}>
             <h2 style={{ marginBottom: ".4rem" }}>{tr("checkout.step3.title", L)}</h2>
             <p className="sub" style={{ marginBottom: "1.5rem", color: "var(--mut)" }}>{tr("checkout.step3.desc", L)}</p>
-            <form id="form-3" noValidate className="cform">
+            <form id="form-3" noValidate className="cf">
               <div className="cfd"><label><span>{tr("checkout.step3.hosting", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label>
                 <div style={{ display: "flex", gap: ".8rem", flexWrap: "wrap", marginTop: ".5rem" }}>
                   {HOSTING_OPTIONS.map((opt) => {
                     const selected = step3.hosting === opt.key;
                     const price = opt.priceKey ? domainPrice : (opt.price ?? 0);
                     return (
-                      <label key={opt.key} className={`copt${selected ? " checked" : ""}`} onClick={() => { setStep3((s) => ({ ...s, hosting: opt.key })); }}>
+                      <label key={opt.key} className={`co${selected ? " sel" : ""}`} onClick={() => { setStep3((s) => ({ ...s, hosting: opt.key })); }}>
                         <input type="radio" name="hosting" value={opt.key} defaultChecked={selected} style={{ display: "none" }} />
                         <div className="ot">{trLabel(opt.label)}</div>
                         <div className="op">{price === 0 ? tr("ui.free", L) : npr(price)}</div>
@@ -361,14 +359,14 @@ export default function Checkout() {
                 </div>
               </div>
               {errors[3] && <div className="cerr">{errors[3]}</div>}
-              <div className="cfd fu" id="existing-hosting-wrap" hidden={step3.hosting !== "existing"}>
+              <div className="cfd" id="existing-hosting-wrap" hidden={step3.hosting !== "existing"}>
                 <label><span>{tr("checkout.step3.existingHosting.provider", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label>
                 <div className="cpp" id="provider-pills">
                   {["WorldLink", "Classic Tech", "Vianet", "Subisu", "Other"].map((p) => {
                     const isOther = p === "Other";
                     const active = step3.hostProvider === p || (isOther && !!step3.hostProviderOther);
                     return (
-                      <label key={p} className={active ? "active" : ""} onClick={() => {
+                      <label key={p} className={active ? "a" : ""} onClick={() => {
                         setStep3((s) => ({ ...s, hostProvider: isOther ? (step3.hostProviderOther || p) : p }));
                       }}>
                         <input type="radio" name="host-provider" value={p} defaultChecked={active} style={{ display: "none" }} />
@@ -378,7 +376,7 @@ export default function Checkout() {
                   })}
                 </div>
                 {step3.hostProvider === "Other" && (
-                  <input id="c-host-provider-other" className="input" defaultValue={step3.hostProviderOther} onChange={(e) => setStep3((s) => ({ ...s, hostProviderOther: e.target.value, hostProvider: e.target.value || step3.hostProvider }))} placeholder="Enter provider name" style={{ marginTop: ".6rem", width: "100%" }} />
+                  <input id="c-host-provider-other" defaultValue={step3.hostProviderOther} onChange={(e) => setStep3((s) => ({ ...s, hostProviderOther: e.target.value, hostProvider: e.target.value || step3.hostProvider }))} placeholder="Enter provider name" style={{ marginTop: ".6rem", width: "100%" }} />
                 )}
               </div>
               <div className="cfd"><label><span>{tr("checkout.step3.domain", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label>
@@ -387,7 +385,7 @@ export default function Checkout() {
                     const selected = step3.domain === opt.key;
                     const price = opt.priceKey ? domainPrice : (opt.price ?? 0);
                     return (
-                      <label key={opt.key} className={`copt${selected ? " checked" : ""}`} onClick={() => { setStep3((s) => ({ ...s, domain: opt.key })); }}>
+                      <label key={opt.key} className={`co${selected ? " sel" : ""}`} onClick={() => { setStep3((s) => ({ ...s, domain: opt.key })); }}>
                         <input type="radio" name="domain" value={opt.key} defaultChecked={selected} style={{ display: "none" }} />
                         <div className="ot">{trLabel(opt.label)}</div>
                         <div className="op">{price === 0 ? tr("ui.free", L) : npr(price)}</div>
@@ -396,35 +394,37 @@ export default function Checkout() {
                   })}
                 </div>
               </div>
-              <div className="cfd fu" id="custom-domain-wrap" hidden={step3.domain !== "custom"}>
+              <div className="cfd" id="custom-domain-wrap" hidden={step3.domain !== "custom"}>
                 <label>{tr("checkout.step3.existingDomain.domainName", L)}</label><input id="c-domain-name" defaultValue={step3.domainName} onChange={(e) => setStep3((s) => ({ ...s, domainName: e.target.value }))} />
                 <label>{tr("checkout.step3.existingDomain.registrar", L)}</label><input id="c-domain-reg" defaultValue={step3.domainRegistrar} onChange={(e) => setStep3((s) => ({ ...s, domainRegistrar: e.target.value }))} />
-                <label style={{ display: "flex", alignItems: "center", gap: ".4rem", marginTop: ".6rem" }}>{tr("checkout.step3.existingDomain.dns", L)}
-                  <input type="checkbox" name="domainDns" value="yes" defaultChecked={step3.domainDns === "yes"} onChange={(e) => setStep3((s) => ({ ...s, domainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: ".4rem", marginTop: ".3rem" }}><input type="checkbox" name="domainDns" value="no" defaultChecked={step3.domainDns === "no"} onChange={(e) => setStep3((s) => ({ ...s, domainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
+                <div style={{ marginTop: ".6rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: ".4rem", cursor: "pointer" }}><input type="checkbox" name="domainDns" value="yes" defaultChecked={step3.domainDns === "yes"} onChange={(e) => setStep3((s) => ({ ...s, domainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
+                  <label style={{ display: "flex", alignItems: "center", gap: ".4rem", marginTop: ".3rem", cursor: "pointer" }}><input type="checkbox" name="domainDns" value="no" defaultChecked={step3.domainDns === "no"} onChange={(e) => setStep3((s) => ({ ...s, domainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
+                </div>
               </div>
-              <div className="cfd fu" id="existing-domain-wrap" hidden={step3.domain !== "existing"}>
+              <div className="cfd" id="existing-domain-wrap" hidden={step3.domain !== "existing"}>
                 <label><span>{tr("checkout.step3.existingDomain.domainName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-ex-domain-name" defaultValue={step3.exDomainName} onChange={(e) => setStep3((s) => ({ ...s, exDomainName: e.target.value }))} />
                 <label><span>{tr("checkout.step3.existingDomain.registrar", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-ex-domain-reg" defaultValue={step3.exDomainRegistrar} onChange={(e) => setStep3((s) => ({ ...s, exDomainRegistrar: e.target.value }))} />
-                <label style={{ display: "flex", alignItems: "center", gap: ".4rem", marginTop: ".6rem" }}><input type="checkbox" name="exDomainDns" value="yes" defaultChecked={step3.exDomainDns === "yes"} onChange={(e) => setStep3((s) => ({ ...s, exDomainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
-                <label style={{ display: "flex", alignItems: "center", gap: ".4rem", marginTop: ".3rem" }}><input type="checkbox" name="exDomainDns" value="no" defaultChecked={step3.exDomainDns === "no"} onChange={(e) => setStep3((s) => ({ ...s, exDomainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
+                <div style={{ marginTop: ".6rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: ".4rem", cursor: "pointer" }}><input type="checkbox" name="exDomainDns" value="yes" defaultChecked={step3.exDomainDns === "yes"} onChange={(e) => setStep3((s) => ({ ...s, exDomainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
+                  <label style={{ display: "flex", alignItems: "center", gap: ".4rem", marginTop: ".3rem", cursor: "pointer" }}><input type="checkbox" name="exDomainDns" value="no" defaultChecked={step3.exDomainDns === "no"} onChange={(e) => setStep3((s) => ({ ...s, exDomainDns: e.target.checked ? "yes" : "no" }))} style={{ width: "auto" }} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
+                </div>
               </div>
               <div id="domain-info" className="cq" style={{ marginTop: "1rem", borderStyle: "dashed", padding: "1rem", borderRadius: 12, borderColor: "var(--line)" }}>
                 {step3.domain === "custom" ? <p style={{ margin: 0, fontSize: ".9rem", color: "var(--mut)" }}>{tr("checkout.step3.customDomain.desc", L)}</p> : step3.domain === "existing" ? <p style={{ margin: 0, fontSize: ".9rem", color: "var(--mut)" }}>Basic connection is free, subject to compatibility. Availability must be confirmed before registration.</p> : <p style={{ margin: 0, fontSize: ".9rem", color: "var(--mut)" }}>Free Vercel subdomain: yourbusiness.vercel.app</p>}
               </div>
             </form>
-            <div className="cact" style={{ marginTop: "1rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
+            <div className="ca" style={{ marginTop: "1rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
               <button className="btn" id="prev-3" onClick={() => setStep(2)}>{tr("ui.previous", L)}</button>
               <button className="btn p" id="next-3" onClick={() => { if (validate(3)) setStep(4); }}>{tr("ui.next", L)}</button>
             </div>
           </div>
 
           {/* Step 4: Customer Details */}
-          <div className={`cstep${step === 4 ? " active" : ""}`}>
+          <div className={`cs${step === 4 ? " active" : ""}`}>
             <h2 style={{ marginBottom: ".4rem" }}>{tr("checkout.step4.title", L)}</h2>
             <p className="sub" style={{ marginBottom: "1.5rem", color: "var(--mut)" }}>{tr("checkout.step4.desc", L)}</p>
-            <form id="form-4" noValidate className="cform">
+            <form id="form-4" noValidate className="cf">
               <div className="cfd"><label><span>{tr("checkout.step4.fullName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-name" defaultValue={step4.fullName} onChange={(e) => setStep4((s) => ({ ...s, fullName: e.target.value }))} /></div>
               {errors[4] && <div className="cerr">{errors[4]}</div>}
               <div className="cfd"><label><span>{tr("checkout.step4.email", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input type="email" id="c-email" defaultValue={step4.email} onChange={(e) => setStep4((s) => ({ ...s, email: e.target.value }))} /></div>
@@ -434,47 +434,46 @@ export default function Checkout() {
               <div className="cfd"><label>{tr("checkout.step4.location", L)}</label><input id="c-loc" defaultValue={step4.location} onChange={(e) => setStep4((s) => ({ ...s, location: e.target.value }))} /></div>
               <div className="cfd"><label><span>{tr("checkout.step4.channel", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-channel" defaultValue={step4.channel} onChange={(e) => setStep4((s) => ({ ...s, channel: e.target.value }))}><option value=""></option>{COMM_CHANNELS.map((c) => <option key={c}>{c}</option>)}</select></div>
             </form>
-            <div className="cact" style={{ marginTop: "1rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
+            <div className="ca" style={{ marginTop: "1rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
               <button className="btn" id="prev-4" onClick={() => setStep(3)}>{tr("ui.previous", L)}</button>
               <button className="btn p" id="next-4" onClick={() => { if (validate(4)) setStep(5); }}>{tr("ui.next", L)}</button>
             </div>
           </div>
 
           {/* Step 5: Summary */}
-          <div className={`cstep${step === 5 ? " active" : ""}`}>
+          <div className={`cs${step === 5 ? " active" : ""}`}>
             <h2 style={{ marginBottom: ".4rem" }}>{tr("checkout.step5.title", L)}</h2>
             <p className="sub" style={{ marginBottom: "1.5rem", color: "var(--mut)" }}>{tr("checkout.step5.desc", L)}</p>
-            <div className="csum">
-              <div className="csrow"><span>{tr("checkout.step5.package", L)}</span><span className="mono">{orderDraft.packageName}</span></div>
-              <div className="csrow"><span className="mono">{orderDraft.packagePrice ? `${tr("ui.npr", L)} ${orderDraft.packagePrice.toLocaleString("en-IN")}` : ""}</span></div>
-              <div className="csrow"><span>{tr("checkout.step5.hostingLabel", L)}</span><span className="mono">{step3.hosting === "vercel" ? tr("checkout.step3.vercel.title", L) : "Existing hosting"}</span></div>
-              <div className="csrow"><span className="mono">{orderDraft.hostingPrice === 0 ? tr("ui.free", L) : npr(orderDraft.hostingPrice)}</span></div>
-              <div className="csrow"><span>{tr("checkout.step5.domainLabel", L)}</span><span className="mono">{orderDraft.domain === "custom" ? `Custom domain ${npr(orderDraft.domainPrice)}` : orderDraft.domain === "existing" ? tr("checkout.step3.existingDomain.title", L) : tr("ui.free", L)}</span></div>
-              <div className="csrow"><span className="mono">{orderDraft.domainPrice === 0 ? tr("ui.free", L) : npr(orderDraft.domainPrice)}</span></div>
-              <div className="csrow addons"><span>{tr("checkout.step5.addOns", L)}</span><span className="mono">{tr("ui.included", L)}</span></div>
-              <div className="sum-divider"></div>
-              <div className="csrow total"><span>{tr("checkout.step5.total", L)}</span><span className="mono">{npr(orderDraft.total)}</span></div>
+            <div className="csm">
+              <div className="csr"><span>{tr("checkout.step5.package", L)}</span><span className="mo">{orderDraft.packageName}</span></div>
+              <div className="csr"><span className="mo">{orderDraft.packagePrice ? `${tr("ui.npr", L)} ${orderDraft.packagePrice.toLocaleString("en-IN")}` : ""}</span></div>
+              <div className="csr"><span>{tr("checkout.step5.hostingLabel", L)}</span><span className="mo">{step3.hosting === "vercel" ? tr("checkout.step3.vercel.title", L) : "Existing hosting"}</span></div>
+              <div className="csr"><span className="mo">{orderDraft.hostingPrice === 0 ? tr("ui.free", L) : npr(orderDraft.hostingPrice)}</span></div>
+              <div className="csr"><span>{tr("checkout.step5.domainLabel", L)}</span><span className="mo">{orderDraft.domain === "custom" ? `Custom domain ${npr(orderDraft.domainPrice)}` : orderDraft.domain === "existing" ? tr("checkout.step3.existingDomain.title", L) : tr("ui.free", L)}</span></div>
+              <div className="csr"><span className="mo">{orderDraft.domainPrice === 0 ? tr("ui.free", L) : npr(orderDraft.domainPrice)}</span></div>
+              <div className="csr addons"><span>{tr("checkout.step5.addOns", L)}</span><span className="mo">{tr("ui.included", L)}</span></div>
+              <div className="csr tot"><span>{tr("checkout.step5.total", L)}</span><span className="mo">{npr(orderDraft.total)}</span></div>
               <p className="sum-note" style={{ marginTop: "1rem", fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step5.note", L)}</p>
             </div>
-            <div className="rs ok" id="sum-pay-note" style={{ marginTop: "1rem", padding: "1rem", borderRadius: 12, border: "1px solid var(--line)" }}><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span style={{ fontSize: ".9rem" }}>{tr("checkout.step5.payLaterDesc", L)}</span></div>
+            <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: 12, border: "1px solid var(--line)", background: "#fdf7e3" }}><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span style={{ fontSize: ".9rem", color: "var(--mut)" }}>{tr("checkout.step5.payLaterDesc", L)}</span></div>
             <p className="note sum-note2" style={{ marginTop: ".75rem", fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step5.pcn", L)}</p>
             {errors[5] && <div className="cerr">{errors[5]}</div>}
-            <div className="cact" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
+            <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
               <button className="btn" id="prev-5" onClick={() => setStep(4)}>{tr("ui.previous", L)}</button>
               <button className="btn p" id="next-5" onClick={() => { if (validate(5)) setStep(6); }}>{tr("ui.next", L)}</button>
             </div>
           </div>
 
           {/* Step 6: Submit / Confirm */}
-          <div className={`cstep${step === 6 ? " active" : ""}`}>
+          <div className={`cs${step === 6 ? " active" : ""}`}>
             {confirmed ? (
-              <div className="ccard">
-                <div className="ccon">✓</div>
+              <div className="ccd">
+                <div className="ccn">✓</div>
                 <h2 style={{ marginBottom: ".5rem" }}>{tr("checkout.step6.successTitle", L)}</h2>
                 <p style={{ color: "var(--mut)", marginBottom: "1.5rem" }}>{tr("checkout.step6.successDesc", L)}</p>
-                <div className="ckeys">
-                  <div>{tr("checkout.step6.orderNumber", L)}</div>
-                  <div style={{ fontFamily: "mono", fontWeight: 800, fontSize: "1.1rem" }}>#{confirmed.order_number}</div>
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <div style={{ fontSize: ".85rem", color: "var(--mut)", marginBottom: ".25rem" }}>{tr("checkout.step6.orderNumber", L)}</div>
+                  <div style={{ fontFamily: "mono", fontWeight: 800, fontSize: "1.2rem", color: "var(--fg)" }}>#{confirmed.order_number}</div>
                 </div>
                 <h3 style={{ margin: "1.5rem 0 .75rem", color: "var(--fg)" }}>{tr("checkout.step6.nextSteps", L)}</h3>
                 <ol>
@@ -483,16 +482,16 @@ export default function Checkout() {
                   <li>{tr("checkout.step6.next3", L)}</li>
                   <li>{tr("checkout.step6.next4", L)}</li>
                 </ol>
-                <div className="cact" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "center" }}>
+                <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "center" }}>
                   <button className="btn p" id="btn-dashboard" onClick={() => window.location.href = "/dashboard"}>{tr("checkout.step6.viewDashboard", L)}</button>{" "}
                   <button className="btn" id="btn-close6" onClick={() => { setConfirmed(null); setStep(1); }}>{tr("ui.close", L)}</button>
                 </div>
               </div>
             ) : (
-              <form id="form-6" noValidate onSubmit={submitOrder} className="cform" style={{ maxWidth: "420px", margin: "0 auto" }}>
+              <form id="form-6" noValidate onSubmit={submitOrder} className="cf" style={{ maxWidth: 420, margin: "0 auto" }}>
                 <div className="cfd"><label className="agree-label" style={{ display: "flex", alignItems: "center", gap: ".6rem", fontSize: ".95rem" }}><input type="checkbox" id="c-agree" name="agree" required /> <span>{tr("checkout.step6.agree", L)}</span></label></div>
                 {errors[6] && <div className="cerr">{errors[6]}</div>}
-                <div className="cact" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "center" }}>
+                <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "center" }}>
                   <button className="btn p" id="btn-submit" disabled={submitting} type="submit" style={{ width: "100%" }}>{submitting ? tr("checkout.step6.submitting", L) : tr("checkout.step6.submit", L)}</button>
                 </div>
               </form>
