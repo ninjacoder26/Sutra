@@ -8,18 +8,16 @@ import { sb, supabaseConfigured } from "@/lib/supabase";
 import { toast, rateLimitCheck, rateLimitConsume, formatNPR } from "@/lib/ui";
 import { APP, HOSTING_OPTIONS, DOMAIN_OPTIONS, CATEGORIES, PURPOSES, DESIGN_STYLES, FUNCTIONALITY, COMM_CHANNELS } from "@/lib/config";
 
-const FALLBACK_PACKAGES: any[] = [
-  { id: "standard", name: "Standard", price: 2499, pageLimit: 3, days: "7–10", featured: false, features: ["Up to 3 pages", "Modern responsive design", "Contact information and business details", "Basic SEO setup", "WhatsApp contact integration", "Mobile and desktop optimisation"] },
-  { id: "professional", name: "Professional", price: 4999, pageLimit: 6, days: "10–14", featured: true, features: ["Up to 6 pages", "Custom-designed website", "Everything in Standard", "Gallery or portfolio section", "Contact form", "Advanced visual customisation", "SEO optimisation"] },
-  { id: "premium", name: "Premium", price: 8499, pageLimit: 10, days: "14–18", featured: false, features: ["Up to 10 pages", "Premium custom design", "Everything in Professional", "Advanced interactions and animations", "Additional customisation", "Enhanced SEO setup", "Priority development"] },
-];
-
-const PROVIDERS = ["WorldLink", "Classic Tech", "Vianet", "Subisu", "Other"];
-
 const npr = (n: number) => `रु. ${(Number(n) || 0).toLocaleString("en-IN")}`;
 
+const FALLBACK_PACKAGES: any[] = [
+  { id: "standard", name: "Standard", name_ne: "स्टान्डर्ड", price: 2499, days: "7–10", featured: false, desc: "For individuals, small shops and first websites.", desc_ne: "व्यक्ति, साना पसल र पहिलो पटक वेबसाइट बनाउनेका लागि।", features: ["Up to 3 pages", "Modern responsive design", "Contact info and business details", "Basic SEO setup", "WhatsApp contact integration", "Mobile and desktop optimisation"] },
+  { id: "professional", name: "Professional", name_ne: "प्रोफेसनल", price: 4999, days: "10–14", featured: true, desc: "For growing businesses that need a stronger presence.", desc_ne: "अनलाइन उपस्थिति बलियो बनाउन चाहने बढ्दो व्यवसायका लागि।", features: ["Up to 6 pages", "Custom-designed website", "Everything in Standard", "Gallery or portfolio section", "Contact form", "Advanced visual customisation", "SEO optimisation"] },
+  { id: "premium", name: "Premium", name_ne: "प्रिमियम", price: 8499, days: "14–18", featured: false, desc: "For a more complete website experience.", desc_ne: "अझ पूर्ण वेबसाइट अनुभव चाहनेका लागि।", features: ["Up to 10 pages", "Premium custom design", "Everything in Professional", "Advanced interactions and animations", "Additional customisation", "Enhanced SEO setup", "Priority development"] },
+];
+
 export default function Checkout() {
-  const { t, l: langFromContext, set: setLang } = useT();
+  const { t, l: contextLang, set: setContextLang } = useT();
   const [L, setL] = useState<Lang>(() => {
     if (typeof window !== "undefined") {
       const s = localStorage.getItem("sutra-lang");
@@ -28,25 +26,44 @@ export default function Checkout() {
     return "en";
   });
   useEffect(() => {
-    if (langFromContext !== L) setL(langFromContext);
-  }, [langFromContext, L]);
+    if (contextLang !== L) setL(contextLang);
+  }, [contextLang, L]);
 
-  const [currentStep, setCurrentStep] = useState(1);
+  // Step state
+  const [step, setStep] = useState(1);
+
+  // Package
   const [packages, setPackages] = useState<any[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  const [domainPrice, setDomainPrice] = useState(APP.defaultDomainPrice);
-  const [step2, setStep2] = useState<any>({
+
+  // Step 2 form
+  const [step2, setStep2] = useState({
     businessName: "", category: "", websiteType: "", description: "", purpose: "",
-    designStyle: "", preferredColors: "", pages: 1, functionality: [], otherFeature: "", instructions: "",
+    designStyle: "", preferredColors: "", pages: 1, functionality: [] as string[], otherFeature: "", instructions: "",
   });
-  const [step3, setStep3] = useState<any>({ hosting: "vercel", domain: "none", hostProvider: "", hostProviderOther: "", domainName: "", domainRegistrar: "", domainDns: "no", exDomainName: "", exDomainRegistrar: "", exDomainDns: "no" });
-  const [step4, setStep4] = useState<any>({ fullName: "", email: "", phone: "", whatsapp: "", businessName: "", location: "", channel: "" });
+
+  // Step 3 form
+  const [step3, setStep3] = useState({
+    hosting: "vercel", domain: "none", hostProvider: "", hostProviderOther: "",
+    domainName: "", domainRegistrar: "", domainDns: "no",
+    exDomainName: "", exDomainRegistrar: "", exDomainDns: "no",
+  });
+
+  // Step 4 form
+  const [step4, setStep4] = useState({
+    fullName: "", email: "", phone: "", whatsapp: "", businessName: "", location: "", channel: "",
+  });
+
+  // Step 5 / submit
+  const [domainPrice, setDomainPrice] = useState(APP.defaultDomainPrice);
   const [orderDraft, setOrderDraft] = useState<any>({});
-  const [stepErrors, setStepErrors] = useState<Record<number, string>>({});
+  const [errors, setErrors] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<any>(null);
 
+  // Load packages + domain price
   useEffect(() => {
+    let mounted = true;
     (async () => {
       let rows: any[] = [];
       if (sb) {
@@ -57,19 +74,21 @@ export default function Checkout() {
       }
       if (!rows.length) rows = FALLBACK_PACKAGES.map((p, i) => ({ ...p, sort_order: i, active: true }));
       if (!rows.some((r) => r.featured) && rows.length >= 2) rows[1].featured = true;
-      setPackages(rows);
+      if (mounted) setPackages(rows);
     })();
-    if (sb) {
+    if (sb && mounted) {
       sb.from("site_settings").select("setting_value").eq("setting_key", "domain_price").single().then(({ data, error }: any) => {
-        if (!error && data) {
+        if (mounted && !error && data) {
           const v = Number((data as any).setting_value);
           if (!Number.isNaN(v)) setDomainPrice(v);
         }
       });
     }
+    return () => { mounted = false; };
   }, [sb]);
 
-  const updateSummary = useCallback(() => {
+  // Recompute order summary whenever inputs change
+  useEffect(() => {
     const pkg = selectedPackage;
     const pkgPrice = pkg ? Number(pkg.price) : 0;
     const hostPrice = step3.hosting === "vercel" ? APP.defaultVercelPrice : 0;
@@ -77,91 +96,98 @@ export default function Checkout() {
     if (step3.domain === "custom") domPrice = Number(domainPrice);
     const total = pkgPrice + hostPrice + domPrice;
     const pkgName = pkg ? (L === "ne" && pkg.name_ne ? pkg.name_ne : pkg.name) : "\u2014";
-    let domLabel = tr("ui.none", L);
-    if (step3.domain === "custom") domLabel = `Custom domain ${npr(domainPrice)}`;
-    else if (step3.domain === "existing") domLabel = tr("checkout.step3.existingDomain.title", L);
-    else domLabel = tr("ui.free", L);
-    setOrderDraft({ packageId: pkg ? pkg.id : null, packageName: pkgName, packagePrice: pkgPrice, hosting: step3.hosting, hostingPrice: hostPrice, domain: step3.domain, domainPrice: domPrice, domainName: step3.domainName || "", total });
+    setOrderDraft({
+      packageId: pkg ? pkg.id : null,
+      packageName: pkgName,
+      packagePrice: pkgPrice,
+      hosting: step3.hosting,
+      hostingPrice: hostPrice,
+      domain: step3.domain,
+      domainPrice: domPrice,
+      total,
+    });
   }, [selectedPackage, step3, domainPrice, L]);
 
-  useEffect(() => { updateSummary(); }, [updateSummary]);
-
-  const selectPackage = (i: number) => {
-    const p = packages[i];
-    setSelectedPackage(p);
-    setStepErrors((prev: any) => ({ ...prev, [1]: "" }));
-  };
-
-  const validateStep = (n: number): boolean => {
+  // ---- Validation (state-driven, no DOM reads) ----
+  const validate = useCallback((n: number): boolean => {
+    setErrors({});
     if (n === 1) {
-      if (!selectedPackage) { setStepErrors((p: any) => ({ ...p, [1]: tr("validation.selectPackage", L) })); return false; }
+      if (!selectedPackage) {
+        setErrors({ 1: tr("validation.selectPackage", L) });
+        return false;
+      }
       return true;
     }
     if (n === 2) {
-      if (!step2.businessName.trim()) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      if (!step2.category) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      if (!step2.websiteType) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      if (!step2.purpose) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      if (!step2.designStyle) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      if (!step2.pages) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
-      if (!step2.functionality || step2.functionality.length === 0) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.selectFunctionality", L) })); return false; }
-      if (step2.functionality.includes("Other custom features") && !step2.otherFeature.trim()) { setStepErrors((p: any) => ({ ...p, [2]: tr("validation.required", L) })); return false; }
+      if (!step2.businessName.trim()) { setErrors({ 2: tr("validation.required", L) }); return false; }
+      if (!step2.category) { setErrors({ 2: tr("validation.required", L) }); return false; }
+      if (!step2.websiteType) { setErrors({ 2: tr("validation.required", L) }); return false; }
+      if (!step2.purpose) { setErrors({ 2: tr("validation.required", L) }); return false; }
+      if (!step2.designStyle) { setErrors({ 2: tr("validation.required", L) }); return false; }
+      if (!step2.pages) { setErrors({ 2: tr("validation.required", L) }); return false; }
+      if (!step2.functionality || step2.functionality.length === 0) {
+        setErrors({ 2: tr("validation.selectFunctionality", L) }); return false;
+      }
+      if (step2.functionality.includes("Other custom features") && !step2.otherFeature.trim()) {
+        setErrors({ 2: tr("validation.required", L) }); return false;
+      }
       return true;
     }
     if (n === 3) {
-      if (!step3.hosting) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.required", L) })); return false; }
-      if (!step3.domain) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.required", L) })); return false; }
+      if (!step3.hosting) { setErrors({ 3: tr("validation.required", L) }); return false; }
+      if (!step3.domain) { setErrors({ 3: tr("validation.required", L) }); return false; }
       if (step3.hosting === "existing") {
         const prov = step3.hostProvider || step3.hostProviderOther || "";
-        if (!prov.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.providerRequired", L) })); return false; }
+        if (!prov.trim()) { setErrors({ 3: tr("validation.providerRequired", L) }); return false; }
       }
       if (step3.domain === "custom") {
-        if (!step3.domainName.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.domainRequired", L) })); return false; }
-        if (!step3.domainRegistrar.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.registrarRequired", L) })); return false; }
+        if (!step3.domainName.trim()) { setErrors({ 3: tr("validation.domainRequired", L) }); return false; }
+        if (!step3.domainRegistrar.trim()) { setErrors({ 3: tr("validation.registrarRequired", L) }); return false; }
       }
       if (step3.domain === "existing") {
-        if (!step3.exDomainName.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.domainRequired", L) })); return false; }
-        if (!step3.exDomainRegistrar.trim()) { setStepErrors((p: any) => ({ ...p, [3]: tr("validation.registrarRequired", L) })); return false; }
+        if (!step3.exDomainName.trim()) { setErrors({ 3: tr("validation.domainRequired", L) }); return false; }
+        if (!step3.exDomainRegistrar.trim()) { setErrors({ 3: tr("validation.registrarRequired", L) }); return false; }
       }
       return true;
     }
     if (n === 4) {
-      if (!step4.fullName.trim()) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
-      if (!step4.email.trim()) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
-      if (!step4.phone.trim()) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
-      if (!step4.channel) { setStepErrors((p: any) => ({ ...p, [4]: tr("validation.required", L) })); return false; }
+      if (!step4.fullName.trim()) { setErrors({ 4: tr("validation.required", L) }); return false; }
+      if (!step4.email.trim()) { setErrors({ 4: tr("validation.required", L) }); return false; }
+      if (!step4.phone.trim()) { setErrors({ 4: tr("validation.required", L) }); return false; }
+      if (!step4.channel) { setErrors({ 4: tr("validation.required", L) }); return false; }
       return true;
     }
     if (n === 5) {
-      if (!selectedPackage) { setStepErrors((p: any) => ({ ...p, [5]: tr("validation.selectPackage", L) })); return false; }
+      if (!selectedPackage) { setErrors({ 5: tr("validation.selectPackage", L) }); return false; }
       return true;
     }
     return true;
-  };
+  }, [L, selectedPackage, step2, step3, step4]);
 
-  const submitOrder = async () => {
+  // ---- Submit ----
+  const submitOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate(5)) return;
+
     const rl = rateLimitCheck("checkoutSubmit", (msg: string) => toast(msg, "no"));
     if (!rl.allowed) return;
-    if (!step4.whatsapp && true) { /* whatsapp optional */ }
-    const agreeChecked = true; // handled by required checkbox in JSX
-    if (!selectedPackage) { setStepErrors((p: any) => ({ ...p, [6]: tr("validation.selectPackage", L) })); return; }
 
     const orderNumber = APP.orderPrefix + "-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
     const order: any = {
       order_number: orderNumber,
-      customer_name: step4.fullName || "",
-      customer_email: step4.email || "",
-      customer_phone: step4.phone || "",
-      business_name: step4.businessName || "",
-      package_id: selectedPackage.id || null,
+      customer_name: step4.fullName,
+      customer_email: step4.email,
+      customer_phone: step4.phone,
+      business_name: step4.businessName,
+      package_id: selectedPackage?.id || null,
       package_name: orderDraft.packageName,
       package_price: orderDraft.packagePrice,
-      website_type: step2.websiteType || "",
-      website_description: step2.description || "",
+      website_type: step2.websiteType,
+      website_description: step2.description,
       website_requirements: {
         category: step2.category, purpose: step2.purpose, designStyle: step2.designStyle,
-        preferredColors: step2.preferredColors, pages: step2.pages, functionality: step2.functionality,
-        otherFeature: step2.otherFeature, instructions: step2.instructions,
+        preferredColors: step2.preferredColors, pages: step2.pages,
+        functionality: step2.functionality, otherFeature: step2.otherFeature, instructions: step2.instructions,
       },
       hosting_option: step3.hosting,
       hosting_provider: step3.hostProvider || step3.hostProviderOther || "",
@@ -187,23 +213,39 @@ export default function Checkout() {
         if (error) throw error;
         result = data;
         rateLimitConsume("checkoutSubmit");
-      } catch (e) { console.warn("Order insert failed:", e); result = null; }
+      } catch (e) {
+        console.warn("Order insert failed:", e);
+        result = null;
+      }
     }
     setSubmitting(false);
 
     if (result?.order_number) {
       setConfirmed(result);
-      setCurrentStep(6);
+      setStep(6);
     } else {
-      const ref = orderNumber;
       try {
         const pending = JSON.parse(localStorage.getItem("sutra-pending-orders") || "[]");
-        pending.push({ ...order, ref, localOnly: true, createdAt: new Date().toISOString() });
+        pending.push({ ...order, ref: orderNumber, localOnly: true, createdAt: new Date().toISOString() });
         localStorage.setItem("sutra-pending-orders", JSON.stringify(pending));
       } catch { /* ignore */ }
-      setConfirmed({ order_number: ref, total: orderDraft.total, localOnly: true });
-      setCurrentStep(6);
+      setConfirmed({ order_number: orderNumber, total: orderDraft.total, localOnly: true });
+      setStep(6);
     }
+  };
+
+  const pkgLabel = (p: any) => (L === "ne" ? (p.name_ne || p.name) : p.name);
+  const pkgDesc = (p: any) => (L === "ne" ? (p.desc_ne || p.desc) : p.desc);
+
+  const trLabel = (label: string) => {
+    const map: Record<string, Record<string, string>> = {
+      "Vercel Hosting (free)": { en: "Vercel Hosting (free)", ne: "Vercel होस्टिङ (निःशुल्क)" },
+      "Custom domain (NPR 1,599)": { en: "Custom domain (NPR 1,599)", ne: "कस्टम डोमेन (रु. 1,599)" },
+      "Connect existing domain (free)": { en: "Connect existing domain (free)", ne: "पहिलेदेखि रहेको डोमेन कनेक्ट गर्नुहोस् (निःशुल्क)" },
+      "No domain / Vercel subdomain (free)": { en: "No domain / Vercel subdomain (free)", ne: "डोमेन नभएको / Vercel उपडोमेन (निःशुल्क)" },
+      "Existing hosting provider": { en: "Existing hosting provider", ne: "पहिलेदेखि रहेको होस्टिङ प्रदायक" },
+    };
+    return map[label]?.[L] || label;
   };
 
   return (
@@ -225,8 +267,8 @@ export default function Checkout() {
           </nav>
           <div className="app-actions">
             <div className="lang" role="group" aria-label="Language">
-              <button data-l="en" aria-pressed={L === "en"} onClick={() => { setL("en"); try { localStorage.setItem("sutra-lang", "en"); } catch {} setLang("en"); window.location.reload(); }}>EN</button>
-              <button data-l="ne" aria-pressed={L === "ne"} lang="ne" onClick={() => { setL("ne"); try { localStorage.setItem("sutra-lang", "ne"); } catch {} setLang("ne"); window.location.reload(); }}>नेपाली</button>
+              <button data-l="en" aria-pressed={L === "en"} onClick={() => { setL("en"); setContextLang("en"); try { localStorage.setItem("sutra-lang", "en"); } catch {} }}>EN</button>
+              <button data-l="ne" aria-pressed={L === "ne"} lang="ne" onClick={() => { setL("ne"); setContextLang("ne"); try { localStorage.setItem("sutra-lang", "ne"); } catch {} }}>नेपाली</button>
             </div>
             <a href="/checkout" className="btn p" style={{ padding: ".55rem 1.1rem", fontSize: ".92rem" }}>{tr("header.checkout", L)}</a>
             <button className="app-menu-toggle" id="bg" aria-expanded="false" aria-label="Menu"><span></span><span></span></button>
@@ -241,90 +283,89 @@ export default function Checkout() {
               <p className="sub">{tr("checkout.subtitle", L)}</p>
               <div id="setup-notice"></div>
             </div>
+
             <ol className="progress" id="progress" aria-label="Checkout progress">
               {[1, 2, 3, 4, 5, 6].map((n) => (
-                <li key={n} className={`p-step${currentStep >= n ? " done" : ""}${currentStep === n ? " current" : ""}`} data-step={String(n)}>
+                <li key={n} className={`p-step${step >= n ? " done" : ""}${step === n ? " current" : ""}`} data-step={String(n)}>
                   <span className="p-num">{n}</span>
                   <span className="p-label">{tr(`checkout.steps.${n}`, L)}</span>
                 </li>
               ))}
             </ol>
+
             <div className="steps" id="steps">
-              {/* Step 1: Package */}
-              <div className={`step-panel rv${currentStep !== 1 ? " hidden" : ""}`} data-step="1">
+              {/* ===== Step 1: Package ===== */}
+              <div className={`step-panel rv${step !== 1 ? " hidden" : ""}`} data-step="1">
                 <h2>{tr("checkout.step1.title", L)}</h2>
                 <p className="sub">{tr("checkout.step1.desc", L)}</p>
                 <div className="pkg-grid" id="pkg-grid">
                   {packages.map((p: any, i: number) => {
                     const featured = p.featured === true;
-                    const name = L === "ne" ? (p.name_ne || p.name) : p.name;
-                    const price = p.price ?? 0;
-                    const days = L === "ne" ? (p.days_ne || p.days || "\u0916\u093e\u092a\u0930\u094d\u092f\u0942\u0917") : (p.days || "\u2013 days");
+                    const isSelected = selectedPackage === p;
                     return (
-                      <article key={i} className={`card pkg${featured ? " featured" : ""}${selectedPackage === p ? " selected" : ""}`} data-pkg={String(i)} onClick={() => selectPackage(i)}>
+                      <article key={i} className={`card pkg${featured ? " featured" : ""}${isSelected ? " selected" : ""}`} onClick={() => { setSelectedPackage(p); setErrors((e) => ({ ...e, 1: "" })); }}>
                         {featured ? <span className="tag soft">{tr("checkout.step1.recommended", L)}</span> : null}
-                        <h3 style={{ marginTop: 0 }}>{name}</h3>
-                        <p>{L === "ne" ? (p.desc_ne || p.description || "") : (p.description || "")}</p>
-                        <div className="pc">रु. {price}</div>
-                        <span className="dl">{days}</span>
+                        <h3 style={{ marginTop: 0 }}>{pkgLabel(p)}</h3>
+                        <p>{pkgDesc(p)}</p>
+                        <div className="pc">रु. {p.price}</div>
+                        <span className="dl">{p.days}</span>
                         <ul>{(p.features || []).map((f: string) => <li key={f}>{f}</li>)}</ul>
-                        <button className={`btn ${featured ? "p" : ""}`} style={{ width: "100%", marginTop: "auto" }}>{tr("checkout.step1.choose", L)}</button>
+                        <button className={`btn ${featured ? "p" : ""}`} style={{ width: "100%", marginTop: "auto" }} onClick={() => { setSelectedPackage(p); setErrors((e) => ({ ...e, 1: "" })); }}>{tr("checkout.step1.choose", L)}</button>
                       </article>
                     );
                   })}
                 </div>
-                {stepErrors[1] && <div className="rs no">{stepErrors[1]}</div>}
-                <div className="step-actions"><button className="btn p" id="next-1" onClick={() => { if (validateStep(1)) setCurrentStep(2); }}>{tr("ui.next", L)}</button></div>
+                {errors[1] && <div className="rs no">{errors[1]}</div>}
+                <div className="step-actions"><button className="btn p" id="next-1" onClick={() => { if (validate(1)) setStep(2); }}>{tr("ui.next", L)}</button></div>
               </div>
 
-              {/* Step 2: Configuration */}
-              <div className={`step-panel rv hidden${currentStep === 2 ? "" : " hidden"}`} data-step="2">
+              {/* ===== Step 2: Configuration ===== */}
+              <div className={`step-panel rv hidden${step === 2 ? "" : " hidden"}`} data-step="2">
                 <h2>{tr("checkout.step2.title", L)}</h2>
                 <p className="sub">{tr("checkout.step2.desc", L)}</p>
                 <form id="form-2" noValidate>
-                  <div className="fd"><label><span>{tr("checkout.step2.businessName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-bizname" name="businessName" defaultValue={step2.businessName || ""} onChange={(e) => setStep2((s: any) => ({ ...s, businessName: e.target.value }))} required /></div>
-                  <div className="fd"><label><span>{tr("checkout.step2.category", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-category" name="category" defaultValue={step2.category || ""} onChange={(e) => setStep2((s: any) => ({ ...s, category: e.target.value }))} required><option value=""></option>{CATEGORIES.map((c: any) => <option key={c}>{c}</option>)}</select></div>
-                  <div className="fd"><label><span>{tr("checkout.step2.websiteType", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-webtype" name="websiteType" defaultValue={step2.websiteType || ""} onChange={(e) => setStep2((s: any) => ({ ...s, websiteType: e.target.value }))} required><option value=""></option>{PURPOSES.map((c: any) => <option key={c}>{c}</option>)}</select></div>
-                  <div className="fd fu"><label>{tr("checkout.step2.description", L)}</label><textarea id="c-desc" name="description" defaultValue={step2.description || ""} onChange={(e) => setStep2((s: any) => ({ ...s, description: e.target.value }))} rows={4} /></div>
-                  <div className="fd"><label><span>{tr("checkout.step2.purpose", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-purpose" name="purpose" defaultValue={step2.purpose || ""} onChange={(e) => setStep2((s: any) => ({ ...s, purpose: e.target.value }))} required><option value=""></option>{PURPOSES.map((c: any) => <option key={c}>{c}</option>)}</select></div>
-                  <div className="fd"><label><span>{tr("checkout.step2.designStyle", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-style" name="designStyle" defaultValue={step2.designStyle || ""} onChange={(e) => setStep2((s: any) => ({ ...s, designStyle: e.target.value }))} required><option value=""></option>{DESIGN_STYLES.map((c: any) => <option key={c}>{c}</option>)}</select></div>
-                  <div className="fd"><label>{tr("checkout.step2.preferredColors", L)}</label><input id="c-colors" name="preferredColors" defaultValue={step2.preferredColors || ""} onChange={(e) => setStep2((s: any) => ({ ...s, preferredColors: e.target.value }))} /></div>
-                  <div className="fd"><label><span>{tr("checkout.step2.pages", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-pages" name="pages" defaultValue={String(step2.pages || 1)} onChange={(e) => setStep2((s: any) => ({ ...s, pages: Number(e.target.value) }))} required><option value=""></option>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n: any) => <option key={n}>{n}</option>)}</select></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.businessName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-bizname" defaultValue={step2.businessName} onChange={(e) => setStep2((s) => ({ ...s, businessName: e.target.value }))} /></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.category", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-category" defaultValue={step2.category} onChange={(e) => setStep2((s) => ({ ...s, category: e.target.value }))}><option value=""></option>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.websiteType", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-webtype" defaultValue={step2.websiteType} onChange={(e) => setStep2((s) => ({ ...s, websiteType: e.target.value }))}><option value=""></option>{PURPOSES.map((c) => <option key={c}>{c}</option>)}</select></div>
+                  <div className="fd fu"><label>{tr("checkout.step2.description", L)}</label><textarea id="c-desc" defaultValue={step2.description} onChange={(e) => setStep2((s) => ({ ...s, description: e.target.value }))} rows={4} /></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.purpose", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-purpose" defaultValue={step2.purpose} onChange={(e) => setStep2((s) => ({ ...s, purpose: e.target.value }))}><option value=""></option>{PURPOSES.map((c) => <option key={c}>{c}</option>)}</select></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.designStyle", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-style" defaultValue={step2.designStyle} onChange={(e) => setStep2((s) => ({ ...s, designStyle: e.target.value }))}><option value=""></option>{DESIGN_STYLES.map((c) => <option key={c}>{c}</option>)}</select></div>
+                  <div className="fd"><label>{tr("checkout.step2.preferredColors", L)}</label><input id="c-colors" defaultValue={step2.preferredColors} onChange={(e) => setStep2((s) => ({ ...s, preferredColors: e.target.value }))} /></div>
+                  <div className="fd"><label><span>{tr("checkout.step2.pages", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-pages" defaultValue={String(step2.pages)} onChange={(e) => setStep2((s) => ({ ...s, pages: Number(e.target.value) }))}><option value=""></option>{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => <option key={n}>{n}</option>)}</select></div>
                   <div className="fd fu"><label><span>{tr("checkout.step2.functionality", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><div className="checks" id="c-func-checks">
-                    {FUNCTIONALITY.map((f: any) => (
+                    {FUNCTIONALITY.map((f) => (
                       <label key={f} style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", margin: ".25rem .5rem .25rem 0" }}>
-                        <input type="checkbox" name="functionality" value={f} defaultChecked={(step2.functionality || []).includes(f)} onChange={(e) => {
-                          const cur = step2.functionality || [];
-                          if (e.target.checked) setStep2((s: any) => ({ ...s, functionality: [...cur, f] }));
-                          else setStep2((s: any) => ({ ...s, functionality: cur.filter((x: string) => x !== f) }));
+                        <input type="checkbox" name="functionality" value={f} defaultChecked={step2.functionality.includes(f)} onChange={(e) => {
+                          if (e.target.checked) setStep2((s) => ({ ...s, functionality: [...s.functionality, f] }));
+                          else setStep2((s) => ({ ...s, functionality: s.functionality.filter((x) => x !== f) }));
                         }} />
                         {f}
                       </label>
                     ))}
                   </div><p className="em" id="c-func-note">{tr("checkout.step2.functionalityNote", L)}</p></div>
-                  <div className="fd fu" id="c-other-func-wrap" hidden={!(step2.functionality || []).includes("Other custom features")}>
-                    <label>{tr("checkout.step2.otherFeature", L)}</label><input id="c-other-func" name="otherFeature" defaultValue={step2.otherFeature || ""} onChange={(e) => setStep2((s: any) => ({ ...s, otherFeature: e.target.value }))} />
+                  <div className="fd fu" id="c-other-func-wrap" hidden={!step2.functionality.includes("Other custom features")}>
+                    <label>{tr("checkout.step2.otherFeature", L)}</label><input id="c-other-func" defaultValue={step2.otherFeature} onChange={(e) => setStep2((s) => ({ ...s, otherFeature: e.target.value }))} />
                   </div>
-                  <div className="fd fu"><label>{tr("checkout.step2.instructions", L)}</label><textarea id="c-instr" name="instructions" defaultValue={step2.instructions || ""} onChange={(e) => setStep2((s: any) => ({ ...s, instructions: e.target.value }))} rows={3} /></div>
+                  <div className="fd fu"><label>{tr("checkout.step2.instructions", L)}</label><textarea id="c-instr" defaultValue={step2.instructions} onChange={(e) => setStep2((s) => ({ ...s, instructions: e.target.value }))} rows={3} /></div>
                 </form>
-                {stepErrors[2] && <div className="rs no">{stepErrors[2]}</div>}
-                <div className="step-actions"><button className="btn" id="prev-2" onClick={() => setCurrentStep(1)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-2" onClick={() => { if (validateStep(2)) setCurrentStep(3); }}>{tr("ui.next", L)}</button></div>
+                {errors[2] && <div className="rs no">{errors[2]}</div>}
+                <div className="step-actions"><button className="btn" id="prev-2" onClick={() => setStep(1)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-2" onClick={() => { if (validate(2)) setStep(3); }}>{tr("ui.next", L)}</button></div>
               </div>
 
-              {/* Step 3: Hosting & Domain */}
-              <div className={`step-panel rv hidden${currentStep === 3 ? "" : " hidden"}`} data-step="3">
+              {/* ===== Step 3: Hosting & Domain ===== */}
+              <div className={`step-panel rv hidden${step === 3 ? "" : " hidden"}`} data-step="3">
                 <h2>{tr("checkout.step3.title", L)}</h2>
                 <p className="sub">{tr("checkout.step3.desc", L)}</p>
                 <form id="form-3" noValidate>
                   <div className="fd"><label><span>{tr("checkout.step3.hosting", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label>
                     <div className="option-grid" id="hosting-grid">
-                      {HOSTING_OPTIONS.map((opt: any) => {
+                      {HOSTING_OPTIONS.map((opt) => {
                         const selected = step3.hosting === opt.key;
                         const price = opt.priceKey ? domainPrice : (opt.price ?? 0);
                         return (
-                          <label key={opt.key} className={`option-card${selected ? " selected" : ""}`} onClick={() => { setStep3((s: any) => ({ ...s, hosting: opt.key })); updateSummary(); }}>
+                          <label key={opt.key} className={`option-card${selected ? " selected" : ""}`} onClick={() => { setStep3((s) => ({ ...s, hosting: opt.key })); }}>
                             <input type="radio" name="hosting" value={opt.key} defaultChecked={selected} style={{ display: "none" }} />
-                            <div className="opt-title">{trLabel(opt.label, L)}</div>
+                            <div className="opt-title">{trLabel(opt.label)}</div>
                             <div className="opt-price">{price === 0 ? tr("ui.free", L) : npr(price)}</div>
                             <div className="opt-desc">{opt.desc || ""}</div>
                           </label>
@@ -335,27 +376,32 @@ export default function Checkout() {
                   <div className="fd fu" id="existing-hosting-wrap" hidden={step3.hosting !== "existing"}>
                     <label><span>{tr("checkout.step3.existingHosting.provider", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label>
                     <div className="provider-pills" id="provider-pills">
-                      {PROVIDERS.map((p) => {
-                        const active = step3.hostProvider === p || (p === "Other" && step3.hostProviderOther);
+                      {["WorldLink", "Classic Tech", "Vianet", "Subisu", "Other"].map((p) => {
+                        const isOther = p === "Other";
+                        const active = step3.hostProvider === p || (isOther && !!step3.hostProviderOther);
                         return (
-                          <label key={p} className={`pill${active ? " active" : ""}`} data-prov={p} onClick={() => { setStep3((s: any) => ({ ...s, hostProvider: p === "Other" ? (step3.hostProviderOther || p) : p })); updateSummary(); }}>
+                          <label key={p} className={`pill${active ? " active" : ""}`} onClick={() => {
+                            setStep3((s) => ({ ...s, hostProvider: isOther ? (step3.hostProviderOther || p) : p }));
+                          }}>
                             <input type="radio" name="host-provider" value={p} defaultChecked={active} style={{ display: "none" }} />
                             {p}
                           </label>
                         );
                       })}
                     </div>
-                    {step3.hostProvider === "Other" && <input id="c-host-provider-other" name="hostProviderOther" defaultValue={step3.hostProviderOther || ""} onChange={(e) => { setStep3((s: any) => ({ ...s, hostProviderOther: e.target.value, hostProvider: e.target.value || step3.hostProvider })); updateSummary(); }} placeholder="Enter provider name" />}
+                    {step3.hostProvider === "Other" && (
+                      <input id="c-host-provider-other" defaultValue={step3.hostProviderOther} onChange={(e) => setStep3((s) => ({ ...s, hostProviderOther: e.target.value, hostProvider: e.target.value || step3.hostProvider }))} placeholder="Enter provider name" />
+                    )}
                   </div>
                   <div className="fd"><label><span>{tr("checkout.step3.domain", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label>
                     <div className="option-grid" id="domain-grid">
-                      {DOMAIN_OPTIONS.map((opt: any) => {
+                      {DOMAIN_OPTIONS.map((opt) => {
                         const selected = step3.domain === opt.key;
                         const price = opt.priceKey ? domainPrice : (opt.price ?? 0);
                         return (
-                          <label key={opt.key} className={`option-card${selected ? " selected" : ""}`} onClick={() => { setStep3((s: any) => ({ ...s, domain: opt.key })); updateSummary(); }}>
+                          <label key={opt.key} className={`option-card${selected ? " selected" : ""}`} onClick={() => { setStep3((s) => ({ ...s, domain: opt.key })); }}>
                             <input type="radio" name="domain" value={opt.key} defaultChecked={selected} style={{ display: "none" }} />
-                            <div className="opt-title">{trLabel(opt.label, L)}</div>
+                            <div className="opt-title">{trLabel(opt.label)}</div>
                             <div className="opt-price">{price === 0 ? tr("ui.free", L) : npr(price)}</div>
                             <div className="opt-desc">{opt.desc || ""}</div>
                           </label>
@@ -364,80 +410,83 @@ export default function Checkout() {
                     </div>
                   </div>
                   <div className="fd fu" id="custom-domain-wrap" hidden={step3.domain !== "custom"}>
-                    <label>{tr("checkout.step3.existingDomain.domainName", L)}</label><input id="c-domain-name" name="domainName" defaultValue={step3.domainName || ""} onChange={(e) => setStep3((s: any) => ({ ...s, domainName: e.target.value }))} />
-                    <label>{tr("checkout.step3.existingDomain.registrar", L)}</label><input id="c-domain-reg" name="domainRegistrar" defaultValue={step3.domainRegistrar || ""} onChange={(e) => setStep3((s: any) => ({ ...s, domainRegistrar: e.target.value }))} />
+                    <label>{tr("checkout.step3.existingDomain.domainName", L)}</label><input id="c-domain-name" defaultValue={step3.domainName} onChange={(e) => setStep3((s) => ({ ...s, domainName: e.target.value }))} />
+                    <label>{tr("checkout.step3.existingDomain.registrar", L)}</label><input id="c-domain-reg" defaultValue={step3.domainRegistrar} onChange={(e) => setStep3((s) => ({ ...s, domainRegistrar: e.target.value }))} />
                     <label>{tr("checkout.step3.existingDomain.dns", L)}</label>
                     <div className="checks" id="domain-dns-checks">
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600 }}><input type="checkbox" name="domainDns" value="yes" defaultChecked={step3.domainDns === "yes"} onChange={(e) => setStep3((s: any) => ({ ...s, domainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600, marginLeft: ".75rem" }}><input type="checkbox" name="domainDns" value="no" defaultChecked={step3.domainDns === "no"} onChange={(e) => setStep3((s: any) => ({ ...s, domainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600 }}><input type="checkbox" name="domainDns" value="yes" defaultChecked={step3.domainDns === "yes"} onChange={(e) => setStep3((s) => ({ ...s, domainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600, marginLeft: ".75rem" }}><input type="checkbox" name="domainDns" value="no" defaultChecked={step3.domainDns === "no"} onChange={(e) => setStep3((s) => ({ ...s, domainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
                     </div>
                   </div>
                   <div className="fd fu" id="existing-domain-wrap" hidden={step3.domain !== "existing"}>
-                    <label><span>{tr("checkout.step3.existingDomain.domainName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-ex-domain-name" name="exDomainName" defaultValue={step3.exDomainName || ""} onChange={(e) => setStep3((s: any) => ({ ...s, exDomainName: e.target.value }))} />
-                    <label><span>{tr("checkout.step3.existingDomain.registrar", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-ex-domain-reg" name="exDomainRegistrar" defaultValue={step3.exDomainRegistrar || ""} onChange={(e) => setStep3((s: any) => ({ ...s, exDomainRegistrar: e.target.value }))} />
+                    <label><span>{tr("checkout.step3.existingDomain.domainName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-ex-domain-name" defaultValue={step3.exDomainName} onChange={(e) => setStep3((s) => ({ ...s, exDomainName: e.target.value }))} />
+                    <label><span>{tr("checkout.step3.existingDomain.registrar", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-ex-domain-reg" defaultValue={step3.exDomainRegistrar} onChange={(e) => setStep3((s) => ({ ...s, exDomainRegistrar: e.target.value }))} />
                     <label>{tr("checkout.step3.existingDomain.dns", L)}</label>
                     <div className="checks" id="ex-domain-dns-checks">
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600 }}><input type="checkbox" name="exDomainDns" value="yes" defaultChecked={step3.exDomainDns === "yes"} onChange={(e) => setStep3((s: any) => ({ ...s, exDomainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600, marginLeft: ".75rem" }}><input type="checkbox" name="exDomainDns" value="no" defaultChecked={step3.exDomainDns === "no"} onChange={(e) => setStep3((s: any) => ({ ...s, exDomainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600 }}><input type="checkbox" name="exDomainDns" value="yes" defaultChecked={step3.exDomainDns === "yes"} onChange={(e) => setStep3((s) => ({ ...s, exDomainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsYes", L)}</span></label>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", fontWeight: 600, marginLeft: ".75rem" }}><input type="checkbox" name="exDomainDns" value="no" defaultChecked={step3.exDomainDns === "no"} onChange={(e) => setStep3((s) => ({ ...s, exDomainDns: e.target.value ? "yes" : "no" }))} /> <span>{tr("checkout.step3.existingDomain.dnsNo", L)}</span></label>
                     </div>
                   </div>
                   <div id="domain-info" className="cq" style={{ marginTop: "1rem", borderStyle: "dashed" }}>
                     {step3.domain === "custom" ? <p style={{ margin: 0 }}>{tr("checkout.step3.customDomain.desc", L)}</p> : step3.domain === "existing" ? <p style={{ margin: 0 }}>Basic connection is free, subject to compatibility. Availability must be confirmed before registration.</p> : <p style={{ margin: 0 }}>Free Vercel subdomain: yourbusiness.vercel.app</p>}
                   </div>
                 </form>
-                {stepErrors[3] && <div className="rs no">{stepErrors[3]}</div>}
-                <div className="step-actions"><button className="btn" id="prev-3" onClick={() => setCurrentStep(2)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-3" onClick={() => { if (validateStep(3)) setCurrentStep(4); }}>{tr("ui.next", L)}</button></div>
+                {errors[3] && <div className="rs no">{errors[3]}</div>}
+                <div className="step-actions"><button className="btn" id="prev-3" onClick={() => setStep(2)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-3" onClick={() => { if (validate(3)) setStep(4); }}>{tr("ui.next", L)}</button></div>
               </div>
 
-              {/* Step 4: Customer Details */}
-              <div className={`step-panel rv hidden${currentStep === 4 ? "" : " hidden"}`} data-step="4">
+              {/* ===== Step 4: Customer Details ===== */}
+              <div className={`step-panel rv hidden${step === 4 ? "" : " hidden"}`} data-step="4">
                 <h2>{tr("checkout.step4.title", L)}</h2>
                 <p className="sub">{tr("checkout.step4.desc", L)}</p>
                 <form id="form-4" noValidate>
-                  <div className="fd"><label><span>{tr("checkout.step4.fullName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-name" name="fullName" defaultValue={step4.fullName || ""} onChange={(e) => setStep4((s: any) => ({ ...s, fullName: e.target.value }))} required /></div>
-                  <div className="fd"><label><span>{tr("checkout.step4.email", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-email" name="email" type="email" defaultValue={step4.email || ""} onChange={(e) => setStep4((s: any) => ({ ...s, email: e.target.value }))} required /></div>
-                  <div className="fd"><label><span>{tr("checkout.step4.phone", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-phone" name="phone" type="tel" defaultValue={step4.phone || ""} onChange={(e) => setStep4((s: any) => ({ ...s, phone: e.target.value }))} required /></div>
-                  <div className="fd"><label>{tr("checkout.step4.whatsapp", L)}</label><input id="c-whatsapp" name="whatsapp" type="tel" defaultValue={step4.whatsapp || ""} onChange={(e) => setStep4((s: any) => ({ ...s, whatsapp: e.target.value }))} /></div>
-                  <div className="fd"><label>{tr("checkout.step4.businessName", L)}</label><input id="c-biz" name="customerBusiness" defaultValue={step4.businessName || ""} onChange={(e) => setStep4((s: any) => ({ ...s, businessName: e.target.value }))} /></div>
-                  <div className="fd"><label>{tr("checkout.step4.location", L)}</label><input id="c-loc" name="location" defaultValue={step4.location || ""} onChange={(e) => setStep4((s: any) => ({ ...s, location: e.target.value }))} /></div>
-                  <div className="fd"><label><span>{tr("checkout.step4.channel", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-channel" name="channel" defaultValue={step4.channel || ""} onChange={(e) => setStep4((s: any) => ({ ...s, channel: e.target.value }))} required><option value=""></option>{COMM_CHANNELS.map((c: any) => <option key={c}>{c}</option>)}</select></div>
+                  <div className="fd"><label><span>{tr("checkout.step4.fullName", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input id="c-name" defaultValue={step4.fullName} onChange={(e) => setStep4((s) => ({ ...s, fullName: e.target.value }))} /></div>
+                  <div className="fd"><label><span>{tr("checkout.step4.email", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input type="email" id="c-email" defaultValue={step4.email} onChange={(e) => setStep4((s) => ({ ...s, email: e.target.value }))} /></div>
+                  <div className="fd"><label><span>{tr("checkout.step4.phone", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><input type="tel" id="c-phone" defaultValue={step4.phone} onChange={(e) => setStep4((s) => ({ ...s, phone: e.target.value }))} /></div>
+                  <div className="fd"><label>{tr("checkout.step4.whatsapp", L)}</label><input type="tel" id="c-whatsapp" defaultValue={step4.whatsapp} onChange={(e) => setStep4((s) => ({ ...s, whatsapp: e.target.value }))} /></div>
+                  <div className="fd"><label>{tr("checkout.step4.businessName", L)}</label><input id="c-biz" defaultValue={step4.businessName} onChange={(e) => setStep4((s) => ({ ...s, businessName: e.target.value }))} /></div>
+                  <div className="fd"><label>{tr("checkout.step4.location", L)}</label><input id="c-loc" defaultValue={step4.location} onChange={(e) => setStep4((s) => ({ ...s, location: e.target.value }))} /></div>
+                  <div className="fd"><label><span>{tr("checkout.step4.channel", L)}</span><span className="req" style={{ color: "var(--rho)" }}>*</span></label><select id="c-channel" defaultValue={step4.channel} onChange={(e) => setStep4((s) => ({ ...s, channel: e.target.value }))}><option value=""></option>{COMM_CHANNELS.map((c) => <option key={c}>{c}</option>)}</select></div>
                 </form>
-                {stepErrors[4] && <div className="rs no">{stepErrors[4]}</div>}
-                <div className="step-actions"><button className="btn" id="prev-4" onClick={() => setCurrentStep(3)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-4" onClick={() => { if (validateStep(4)) setCurrentStep(5); }}>{tr("ui.next", L)}</button></div>
+                {errors[4] && <div className="rs no">{errors[4]}</div>}
+                <div className="step-actions"><button className="btn" id="prev-4" onClick={() => setStep(3)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-4" onClick={() => { if (validate(4)) setStep(5); }}>{tr("ui.next", L)}</button></div>
               </div>
 
-              {/* Step 5: Summary */}
-              <div className={`step-panel rv hidden${currentStep === 5 ? "" : " hidden"}`} data-step="5">
+              {/* ===== Step 5: Summary ===== */}
+              <div className={`step-panel rv hidden${step === 5 ? "" : " hidden"}`} data-step="5">
                 <h2>{tr("checkout.step5.title", L)}</h2>
                 <p className="sub">{tr("checkout.step5.desc", L)}</p>
                 <div className="summary-card" id="summary-card">
-                  <div className="sum-row"><span>{tr("checkout.step5.package", L)}</span><span className="mono" id="sum-pkg">{orderDraft.packageName}</span></div>
-                  <div className="sum-row"><span className="mono" id="sum-pkg-price">{orderDraft.packagePrice ? `${tr("ui.npr", L)} ${orderDraft.packagePrice.toLocaleString("en-IN")}` : ""}</span></div>
-                  <div className="sum-row"><span>{tr("checkout.step5.hostingLabel", L)}</span><span className="mono" id="sum-host">{step3.hosting === "vercel" ? tr("checkout.step3.vercel.title", L) : "Existing hosting"}</span></div>
-                  <div className="sum-row"><span className="mono" id="sum-host-price">{orderDraft.hostingPrice === 0 ? tr("ui.free", L) : npr(orderDraft.hostingPrice)}</span></div>
-                  <div className="sum-row"><span>{tr("checkout.step5.domainLabel", L)}</span><span className="mono" id="sum-dom">{orderDraft.domain === "custom" ? `Custom domain ${npr(orderDraft.domainPrice)}` : orderDraft.domain === "existing" ? tr("checkout.step3.existingDomain.title", L) : tr("ui.free", L)}</span></div>
-                  <div className="sum-row"><span className="mono" id="sum-dom-price">{orderDraft.domainPrice === 0 ? tr("ui.free", L) : npr(orderDraft.domainPrice)}</span></div>
-                  <div className="sum-row addons"><span>{tr("checkout.step5.addOns", L)}</span><span className="mono" id="sum-addons">{tr("ui.included", L)}</span></div>
+                  <div className="sum-row"><span>{tr("checkout.step5.package", L)}</span><span className="mono">{orderDraft.packageName}</span></div>
+                  <div className="sum-row"><span className="mono">{orderDraft.packagePrice ? `${tr("ui.npr", L)} ${orderDraft.packagePrice.toLocaleString("en-IN")}` : ""}</span></div>
+                  <div className="sum-row"><span>{tr("checkout.step5.hostingLabel", L)}</span><span className="mono">{step3.hosting === "vercel" ? tr("checkout.step3.vercel.title", L) : "Existing hosting"}</span></div>
+                  <div className="sum-row"><span className="mono">{orderDraft.hostingPrice === 0 ? tr("ui.free", L) : npr(orderDraft.hostingPrice)}</span></div>
+                  <div className="sum-row"><span>{tr("checkout.step5.domainLabel", L)}</span><span className="mono">{orderDraft.domain === "custom" ? `Custom domain ${npr(orderDraft.domainPrice)}` : orderDraft.domain === "existing" ? tr("checkout.step3.existingDomain.title", L) : tr("ui.free", L)}</span></div>
+                  <div className="sum-row"><span className="mono">{orderDraft.domainPrice === 0 ? tr("ui.free", L) : npr(orderDraft.domainPrice)}</span></div>
+                  <div className="sum-row addons"><span>{tr("checkout.step5.addOns", L)}</span><span className="mono">{tr("ui.included", L)}</span></div>
                   <div className="sum-divider"></div>
-                  <div className="sum-row total"><span>{tr("checkout.step5.total", L)}</span><span className="mono" id="sum-total">{npr(orderDraft.total)}</span></div>
-                  <p className="sum-note" id="sum-note">{tr("checkout.step5.note", L)}</p>
+                  <div className="sum-row total"><span>{tr("checkout.step5.total", L)}</span><span className="mono">{npr(orderDraft.total)}</span></div>
+                  <p className="sum-note">{tr("checkout.step5.note", L)}</p>
                 </div>
                 <div className="rs ok" id="sum-pay-note" style={{ marginTop: "1rem" }}><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span>{tr("checkout.step5.payLaterDesc", L)}</span></div>
-                <p className="note sum-note2" id="sum-note2">{tr("checkout.step5.pcn", L)}</p>
-                {stepErrors[5] && <div className="rs no">{stepErrors[5]}</div>}
-                <div className="step-actions" style={{ marginTop: "1.5rem" }}><button className="btn" id="prev-5" onClick={() => setCurrentStep(4)}>{tr("ui.previous", L)}</button><button className="btn p" id="next-5" onClick={() => { if (validateStep(5)) setCurrentStep(6); }}>{tr("ui.next", L)}</button></div>
+                <p className="note sum-note2">{tr("checkout.step5.pcn", L)}</p>
+                {errors[5] && <div className="rs no">{errors[5]}</div>}
+                <div className="step-actions" style={{ marginTop: "1.5rem" }}>
+                  <button className="btn" id="prev-5" onClick={() => setStep(4)}>{tr("ui.previous", L)}</button>
+                  <button className="btn p" id="next-5" onClick={() => { if (validate(5)) setStep(6); }}>{tr("ui.next", L)}</button>
+                </div>
               </div>
 
-              {/* Step 6: Submit */}
-              <div className={`step-panel rv hidden${currentStep === 6 ? "" : " hidden"}`} data-step="6">
+              {/* ===== Step 6: Submit / Confirm ===== */}
+              <div className={`step-panel rv hidden${step === 6 ? "" : " hidden"}`} data-step="6">
                 {confirmed ? (
                   <div className="confirm-card">
                     <div className="confirm-icon">✓</div>
                     <h2>{tr("checkout.step6.successTitle", L)}</h2>
                     <p>{tr("checkout.step6.successDesc", L)}</p>
                     <div className="confirm-meta">
-                      <div><span className="sum-label">{tr("checkout.step6.orderNumber", L)}</span><div className="mono order-no" id="s6-order-no">#{confirmed.order_number}</div></div>
-                      <div><span className="sum-label">{tr("checkout.step6.orderReference", L)}</span><div className="mono" id="s6-order-ref">#{confirmed.order_number}</div></div>
+                      <div><span className="sum-label">{tr("checkout.step6.orderNumber", L)}</span><div className="mono order-no">#{confirmed.order_number}</div></div>
+                      <div><span className="sum-label">{tr("checkout.step6.orderReference", L)}</span><div className="mono">#{confirmed.order_number}</div></div>
                     </div>
                     <h3 style={{ margin: "1.6rem 0 .5rem" }}>{tr("checkout.step6.nextSteps", L)}</h3>
                     <ol className="next-steps" style={{ color: "var(--mut)", lineHeight: "1.8" }}>
@@ -448,17 +497,17 @@ export default function Checkout() {
                     </ol>
                     <div className="step-actions" style={{ marginTop: "1.5rem", justifyContent: "center" }}>
                       <button className="btn p" id="btn-dashboard" onClick={() => window.location.href = "/dashboard"}>{tr("checkout.step6.viewDashboard", L)}</button>{" "}
-                      <button className="btn" id="btn-close6" onClick={() => { setConfirmed(null); setCurrentStep(1); }}>{tr("ui.close", L)}</button>
+                      <button className="btn" id="btn-close6" onClick={() => { setConfirmed(null); setStep(1); }}>{tr("ui.close", L)}</button>
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <form id="form-6" noValidate onSubmit={(e) => { e.preventDefault(); submitOrder(); }}>
-                      <div className="fd fu"><label className="agree-label"><input type="checkbox" id="c-agree" name="agree" required /> <span>{tr("checkout.step6.agree", L)}</span></label><span id="e-agree" className="em"></span></div>
-                    </form>
-                    {stepErrors[6] && <div className="rs no">{stepErrors[6]}</div>}
-                    <div className="step-actions"><button className="btn p" id="btn-submit" disabled={submitting} onClick={submitOrder}>{submitting ? tr("checkout.step6.submitting", L) : tr("checkout.step6.submit", L)}</button></div>
-                  </>
+                  <form id="form-6" noValidate onSubmit={submitOrder}>
+                    <div className="fd fu"><label className="agree-label"><input type="checkbox" id="c-agree" name="agree" required /> <span>{tr("checkout.step6.agree", L)}</span></label></div>
+                    {errors[6] && <div className="rs no">{errors[6]}</div>}
+                    <div className="step-actions">
+                      <button className="btn p" id="btn-submit" disabled={submitting} type="submit">{submitting ? tr("checkout.step6.submitting", L) : tr("checkout.step6.submit", L)}</button>
+                    </div>
+                  </form>
                 )}
               </div>
             </div>
@@ -468,14 +517,3 @@ export default function Checkout() {
     </div>
   );
 }
-
-const trLabel = (label: string, L: string) => {
-  const map: Record<string, Record<string, string>> = {
-    "Vercel Hosting (free)": { en: "Vercel Hosting (free)", ne: "Vercel होस्टिङ (निःशुल्क)" },
-    "Custom domain (NPR 1,599)": { en: "Custom domain (NPR 1,599)", ne: "कस्टम डोमेन (रु. 1,599)" },
-    "Connect existing domain (free)": { en: "Connect existing domain (free)", ne: "पहिलेदेखि रहेको डोमेन कनेक्ट गर्नुहोस् (निःशुल्क)" },
-    "No domain / Vercel subdomain (free)": { en: "No domain / Vercel subdomain (free)", ne: "डोमेन नभएको / Vercel उपडोमेन (निःशुल्क)" },
-    "Existing hosting provider": { en: "Existing hosting provider", ne: "पहिलेदेखि रहेको होस्टिङ प्रदायक" },
-  };
-  return map[label]?.[L] || label;
-};

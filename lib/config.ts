@@ -23,7 +23,7 @@ export const APP = {
   adminCode: "sutra-admin-2024",
 };
 
-const HOSTING_OPTIONS = [
+const HOSTING_OPTIONS: any[] = [
   { key: "vercel", label: "Vercel Hosting (free)", price: 0 },
   { key: "existing", label: "Existing hosting provider", price: 0 },
 ];
