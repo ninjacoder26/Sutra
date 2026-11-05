@@ -455,7 +455,7 @@ export default function Checkout() {
               <div className="csr tot"><span>{tr("checkout.step5.total", L)}</span><span className="mo">{npr(orderDraft.total)}</span></div>
               <p className="sum-note" style={{ marginTop: "1rem", fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step5.note", L)}</p>
             </div>
-            <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: 12, border: "1px solid var(--line)", background: "#fdf7e3" }}><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span style={{ fontSize: ".9rem", color: "var(--mut)" }}>{tr("checkout.step5.payLaterDesc", L)}</span></div>
+            <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: 12, border: "1px solid var(--line)", background: "rgba(14,38,36,.04)" }}><strong>{tr("checkout.step5.payLater", L)}</strong><br /><span style={{ fontSize: ".9rem", color: "var(--mut)" }}>{tr("checkout.step5.payLaterDesc", L)}</span></div>
             <p className="note sum-note2" style={{ marginTop: ".75rem", fontSize: ".85rem", color: "var(--mut)" }}>{tr("checkout.step5.pcn", L)}</p>
             {errors[5] && <div className="cerr">{errors[5]}</div>}
             <div className="ca" style={{ marginTop: "1.5rem", border: "none", paddingTop: 0, justifyContent: "space-between" }}>
