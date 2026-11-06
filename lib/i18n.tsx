@@ -53,6 +53,7 @@ const FLAT: Record<Lang, Record<string, any>> = {
       none: "None",
       included: "Included",
       npr: "NPR",
+      stepOf: "Step {n} of {m}",
     },
     header: { checkout: "Checkout" },
     validation: {
@@ -219,6 +220,7 @@ const FLAT: Record<Lang, Record<string, any>> = {
       none: "कुनै नइ",
       included: "समावेशित",
       npr: "रु.",
+      stepOf: "चरण {n} / {m}",
     },
     header: { checkout: "चेकआउट" },
     validation: {
