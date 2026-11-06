@@ -148,6 +148,7 @@ const FLAT: Record<Lang, Record<string, any>> = {
         submitting: "Submitting...",
         submit: "Place order",
       },
+    },
       dashboard: {
         title: "Track Order",
         subtitle: "Enter your email and order reference to track your order.",
@@ -209,7 +210,6 @@ const FLAT: Record<Lang, Record<string, any>> = {
         save: "Save changes",
         logout: "Logout",
       },
-    },
   },
   ne: {
     ui: {
@@ -314,6 +314,7 @@ const FLAT: Record<Lang, Record<string, any>> = {
         submitting: "बुझाइरहेको छ...",
         submit: "अर्डर गर्नुहोस्",
       },
+    },
       dashboard: {
         title: "अर्डर ट्र्याक गर्नुहोस्",
         subtitle: "आफ्नो इमेल र अर्डर सन्दर्भ नम्बर प्रविष्ट गरी अर्डर ट्र्याक गर्नुहोस्।",
@@ -375,7 +376,6 @@ const FLAT: Record<Lang, Record<string, any>> = {
         save: "परिवर्तन सेभ गर्नुहोस्",
         logout: "लग आउट गर्नुहोस्",
       },
-    },
   },
 };
 

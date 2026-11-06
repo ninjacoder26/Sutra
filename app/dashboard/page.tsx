@@ -92,6 +92,18 @@ export default function Dashboard() {
     setUploading(false);
   };
 
+  useEffect(() => {
+    const btn = document.getElementById("bg");
+    const menu = document.getElementById("nl");
+    if (!btn || !menu) return;
+    const h = () => {
+      const open = menu.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    btn.addEventListener("click", h);
+    return () => btn.removeEventListener("click", h);
+  }, []);
+
   const statusIndex = (s: string) => statusOrder[s] ?? 0;
 
   return (
@@ -128,7 +140,7 @@ export default function Dashboard() {
             <p className="sub">{tr("dashboard.subtitle", L)}</p>
 
             {!order ? (
-              <form id="track-form" noValidate onSubmit={(e) => { e.preventDefault(); trackOrder(); }} className="co" style={{ marginTop: "2rem", maxWidth: "560px" }}>
+              <form id="track-form" noValidate onSubmit={(e) => { e.preventDefault(); trackOrder(); }} style={{ marginTop: "2rem", maxWidth: "560px" }}>
                 <div className="fd"><label><span>{tr("dashboard.emailLabel", L)}</span><span style={{ color: "var(--rho)" }}>*</span></label><input id="c-email" name="email" type="email" defaultValue={email} onChange={(e) => setEmail(e.target.value)} required /></div>
                 <div className="fd"><label><span>{tr("dashboard.refLabel", L)}</span><span style={{ color: "var(--rho)" }}>*</span></label><input id="c-ref" name="ref" defaultValue={ref} onChange={(e) => setRef(e.target.value)} required /></div>
                 {err && <div className="er" style={{ marginTop: ".5rem" }}>{err}</div>}

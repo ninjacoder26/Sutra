@@ -90,6 +90,18 @@ export default function Admin() {
 
   useEffect(() => { if (unlocked) loadData(); }, [unlocked]);
 
+  useEffect(() => {
+    const btn = document.getElementById("bg");
+    const menu = document.getElementById("nl");
+    if (!btn || !menu) return;
+    const h = () => {
+      const open = menu.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    btn.addEventListener("click", h);
+    return () => btn.removeEventListener("click", h);
+  }, [unlocked]);
+
   // Computed stats
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
@@ -100,10 +112,10 @@ export default function Admin() {
 
   const statusColor = (s: string) => {
     switch (s) {
-      case "Completed": return "#1a7e47";
-      case "In Progress": return "#d97706";
-      case "Confirmed": return "#2563eb";
-      default: return "#6b7280";
+      case "Completed": return "#4ade80";
+      case "In Progress": return "#fbbf24";
+      case "Confirmed": return "#60a5fa";
+      default: return "#9db3af";
     }
   };
 
@@ -212,6 +224,7 @@ export default function Admin() {
               <button data-l="ne" aria-pressed={L === "ne"} lang="ne" onClick={() => { localStorage.setItem("sutra-lang", "ne"); window.location.reload(); }}>नेपाली</button>
             </div>
             <button className="btn" onClick={() => { setUnlocked(false); localStorage.removeItem("sutra-admin-unlocked"); }}>{tr("admin.logout", L)}</button>
+            <button className="app-menu-toggle" id="bg" aria-expanded="false" aria-label="Menu"><span></span><span></span></button>
           </div>
         </div>
       </header>
@@ -325,8 +338,8 @@ export default function Admin() {
                       <td style={{ padding: ".75rem", fontFamily: "mono" }}>{p.order_number}</td>
                       <td style={{ padding: ".75rem" }}>{p.customer_email}</td>
                       <td style={{ padding: ".75rem", fontFamily: "mono" }}>{npr(p.amount)}</td>
-                      <td style={{ padding: ".75rem" }}><span style={{ color: p.status === "verified" ? "#1a7e47" : p.status === "rejected" ? "#dc2626" : "#d97706", fontWeight: 600 }}>{p.status}</span></td>
-                      <td style={{ padding: ".75rem" }}>{p.receipt_path ? <a href="#" style={{ color: "#2563eb" }} onClick={(e) => { e.preventDefault(); openPayment(p); }}>View</a> : "—"}</td>
+                      <td style={{ padding: ".75rem" }}><span style={{ color: p.status === "verified" ? "#4ade80" : p.status === "rejected" ? "#f87171" : "#fbbf24", fontWeight: 600 }}>{p.status}</span></td>
+                      <td style={{ padding: ".75rem" }}>{p.receipt_path ? <a href="#" style={{ color: "var(--gold)" }} onClick={(e) => { e.preventDefault(); openPayment(p); }}>View</a> : "—"}</td>
                       <td style={{ padding: ".75rem" }}>
                         {p.status !== "verified" && <button className="btn p" style={{ padding: ".35rem .7rem", fontSize: ".8rem", marginRight: ".3rem" }} onClick={() => verifyPayment(p.id, true)}>{tr("admin.verify", L)}</button>}
                         {p.status !== "rejected" && <button className="btn" style={{ padding: ".35rem .7rem", fontSize: ".8rem" }} onClick={() => verifyPayment(p.id, false)}>{tr("admin.reject", L)}</button>}
@@ -394,7 +407,7 @@ export default function Admin() {
           {tab === "settings" && (
             <section style={{ marginTop: "2rem", maxWidth: "560px" }}>
               <h2 style={{ marginBottom: "1rem" }}>{tr("admin.settingsTitle", L)}</h2>
-              <form id="settings-form" noValidate onSubmit={(e) => { e.preventDefault(); saveSettings(); }} className="co" style={{ marginTop: "1rem" }}>
+              <form id="settings-form" noValidate onSubmit={(e) => { e.preventDefault(); saveSettings(); }} style={{ marginTop: "1rem", maxWidth: "560px" }}>
                 <div className="fd"><label>{tr("admin.siteName", L)}</label><input id="c-site-name" name="site_name" defaultValue={settings.site_name || "Sutra Studio"} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} /></div>
                 <div className="fd"><label>{tr("admin.whatsapp", L)}</label><input id="c-whatsapp" name="whatsapp" defaultValue={settings.whatsapp || APP.whatsapp} onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })} /></div>
                 <div className="fd"><label>{tr("admin.emailAdmin", L)}</label><input id="c-email" name="email" type="email" defaultValue={settings.email || APP.email} onChange={(e) => setSettings({ ...settings, email: e.target.value })} /></div>

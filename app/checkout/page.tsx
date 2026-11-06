@@ -34,6 +34,18 @@ export default function Checkout() {
     if (contextLang !== L) setL(contextLang);
   }, [contextLang, L]);
 
+  useEffect(() => {
+    const btn = document.getElementById("bg");
+    const menu = document.getElementById("nl");
+    if (!btn || !menu) return;
+    const h = () => {
+      const open = menu.classList.toggle("open");
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    btn.addEventListener("click", h);
+    return () => btn.removeEventListener("click", h);
+  }, []);
+
   const [step, setStep] = useState(1);
 
   const [packages, setPackages] = useState<any[]>([]);
@@ -343,7 +355,7 @@ export default function Checkout() {
                     const selected = step3.hosting === opt.key;
                     const price = opt.priceKey ? domainPrice : (opt.price ?? 0);
                     return (
-                      <label key={opt.key} className={`co${selected ? " sel" : ""}`} onClick={() => { setStep3((s) => ({ ...s, hosting: opt.key })); }}>
+                      <label key={opt.key} className={`copt${selected ? " sel" : ""}`} onClick={() => { setStep3((s) => ({ ...s, hosting: opt.key })); }}>
                         <input type="radio" name="hosting" value={opt.key} defaultChecked={selected} style={{ display: "none" }} />
                         <div className="ot">{trLabel(opt.label)}</div>
                         <div className="op">{price === 0 ? tr("ui.free", L) : npr(price)}</div>
@@ -379,7 +391,7 @@ export default function Checkout() {
                     const selected = step3.domain === opt.key;
                     const price = opt.priceKey ? domainPrice : (opt.price ?? 0);
                     return (
-                      <label key={opt.key} className={`co${selected ? " sel" : ""}`} onClick={() => { setStep3((s) => ({ ...s, domain: opt.key })); }}>
+                      <label key={opt.key} className={`copt${selected ? " sel" : ""}`} onClick={() => { setStep3((s) => ({ ...s, domain: opt.key })); }}>
                         <input type="radio" name="domain" value={opt.key} defaultChecked={selected} style={{ display: "none" }} />
                         <div className="ot">{trLabel(opt.label)}</div>
                         <div className="op">{price === 0 ? tr("ui.free", L) : npr(price)}</div>
